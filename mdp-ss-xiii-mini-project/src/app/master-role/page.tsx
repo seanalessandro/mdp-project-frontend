@@ -1,17 +1,16 @@
-"use client"; // Penting untuk komponen yang menggunakan useState dan event handler di Next.js App Router
+"use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
+import { Modal } from "antd";
 
-// --- Definisi Tipe untuk Role ---
 interface Role {
   id: number;
-  name: string; // Nama peran, misalnya "Admin", "Developer", "Dept Head"
-  description: string; // Deskripsi singkat tentang peran (opsional, tapi bagus untuk master data)
-  status: 'active' | 'inactive'; // Status peran (misal: aktif/tidak aktif)
+  name: string;
+  description: string;
+  status: 'active' | 'inactive';
 }
 
 export default function ManageRolesPage() {
-  // --- State untuk Daftar Peran ---
   const [roles, setRoles] = useState<Role[]>([
     { id: 1, name: "Admin", description: "Hak akses penuh ke sistem", status: 'active' },
     { id: 2, name: "Developer", description: "Mengembangkan dan memelihara aplikasi", status: 'active' },
@@ -20,22 +19,15 @@ export default function ManageRolesPage() {
     { id: 5, name: "User APPC", description: "Pengguna aplikasi khusus", status: 'inactive' },
   ]);
 
-  // --- State untuk Data Form (Tambah/Edit Peran) ---
   const [formData, setFormData] = useState({
     name: "",
     description: ""
   });
 
-  // --- State untuk Peran yang Sedang Diedit ---
   const [editingRole, setEditingRole] = useState<Role | null>(null);
-
-  // --- State untuk Pesan Sukses ---
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-
-  // --- State untuk Pencarian ---
   const [searchTerm, setSearchTerm] = useState("");
 
-  // --- Handler Perubahan Input Form ---
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
@@ -43,41 +35,39 @@ export default function ManageRolesPage() {
     });
   };
 
-  // --- Handler Submit Form (Tambah/Update) ---
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      alert("Nama peran tidak boleh kosong!");
+      Modal.info({
+        title: 'Peringatan',
+        content: 'Nama peran tidak boleh kosong!',
+      });
       return;
     }
 
     if (editingRole) {
-      // Logic untuk UPDATE peran yang sudah ada
       setRoles(roles.map(role =>
         role.id === editingRole.id
           ? { ...role, name: formData.name, description: formData.description }
           : role
       ));
-      setEditingRole(null); // Keluar dari mode edit
+      setEditingRole(null);
     } else {
-      // Logic untuk CREATE peran baru
       const newRole: Role = {
-        id: roles.length > 0 ? Math.max(...roles.map(r => r.id)) + 1 : 1, // ID baru
+        id: roles.length > 0 ? Math.max(...roles.map(r => r.id)) + 1 : 1,
         name: formData.name,
         description: formData.description,
-        status: 'active' // Peran baru defaultnya aktif
+        status: 'active'
       };
       setRoles([...roles, newRole]);
     }
 
-    // Reset form dan tampilkan pesan sukses
     setFormData({ name: "", description: "" });
     setShowSuccessMessage(true);
-    setTimeout(() => setShowSuccessMessage(false), 3000); // Pesan akan hilang setelah 3 detik
+    setTimeout(() => setShowSuccessMessage(false), 3000);
   };
 
-  // --- Handler Edit Peran ---
   const handleEdit = (role: Role) => {
     setEditingRole(role);
     setFormData({
@@ -86,41 +76,41 @@ export default function ManageRolesPage() {
     });
   };
 
-  // --- Handler Hapus Peran ---
   const handleDelete = (roleId: number) => {
-    if (confirm("Apakah Anda yakin ingin menghapus peran ini?")) {
-      setRoles(roles.filter(role => role.id !== roleId));
-    }
+    Modal.confirm({
+      title: 'Konfirmasi Hapus',
+      content: 'Apakah Anda yakin ingin menghapus peran ini?',
+      okText: 'Ya',
+      cancelText: 'Tidak',
+      onOk: () => {
+        setRoles(roles.filter(role => role.id !== roleId));
+      },
+    });
   };
 
-  // --- Handler Batalkan Edit ---
   const handleCancel = () => {
     setEditingRole(null);
     setFormData({ name: "", description: "" });
   };
 
-  // --- Filter Peran berdasarkan Pencarian ---
   const filteredRoles = roles.filter(role =>
     role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     role.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // --- Fungsi untuk mendapatkan warna status (contoh saja, bisa diimprove) ---
   const getStatusColor = (status: 'active' | 'inactive') => {
     return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation Bar */}
-      <nav className="bg-blue-600 text-white p-4">
+    <>
+      <nav className="bg-blue-600 text-white p-4 -mx-6 -mt-6 rounded-t-xl">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => window.location.href = "/dashboard"} // Sesuaikan dengan jalur dashboard Anda
+              onClick={() => window.location.href = "/dashboard"}
               className="text-white hover:text-blue-200 transition duration-200"
             >
-              {/* Icon panah kembali */}
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
@@ -128,7 +118,7 @@ export default function ManageRolesPage() {
             <h1 className="text-xl font-semibold">Panel Manajemen Role</h1>
           </div>
           <button
-            onClick={() => window.location.href = "/"} // Sesuaikan dengan jalur logout Anda
+            onClick={() => window.location.href = "/login"}
             className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded text-sm font-medium transition duration-200"
           >
             Logout
@@ -137,7 +127,6 @@ export default function ManageRolesPage() {
       </nav>
 
       <div className="max-w-7xl mx-auto p-6">
-        {/* Success Message */}
         {showSuccessMessage && (
           <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
             {editingRole ? "Peran berhasil diupdate!" : "Peran berhasil ditambahkan!"}
@@ -145,7 +134,6 @@ export default function ManageRolesPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Side - Form untuk Tambah/Edit Role */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4">
@@ -178,7 +166,7 @@ export default function ManageRolesPage() {
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
-                    rows={3} // Jumlah baris default
+                    rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Deskripsi singkat peran ini (opsional)"
                   />
@@ -206,7 +194,6 @@ export default function ManageRolesPage() {
             </div>
           </div>
 
-          {/* Right Side - Daftar Peran */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex justify-between items-center mb-4">
@@ -219,7 +206,6 @@ export default function ManageRolesPage() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                  {/* Icon Cari */}
                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
@@ -295,6 +281,6 @@ export default function ManageRolesPage() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

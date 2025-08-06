@@ -1,22 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import PaperIcon from "../../components/PaperIcon";
 
 export default function DashboardPage() {
   const [user] = useState({ name: "Master User", role: "Administrator" });
 
   const handleLogout = () => {
-    // Handle logout logic here
-    window.location.href = "/";
+    window.location.href = "/login";
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
+    <>
+      <header className="bg-white shadow-sm border-b -mx-6 -mt-6 px-6 py-4 rounded-t-xl">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
               <PaperIcon className="w-8 h-8 text-blue-500" />
               <div>
@@ -28,7 +26,7 @@ export default function DashboardPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-900">{user.name}</p>
@@ -45,9 +43,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Card */}
+      <main className="max-w-7xl mx-auto py-8">
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <div className="flex items-center space-x-4">
             <div className="bg-blue-100 p-3 rounded-full">
@@ -64,7 +60,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between">
@@ -109,7 +104,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Quick Actions */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -120,7 +114,7 @@ export default function DashboardPage() {
               <span className="block text-sm font-medium">New Document</span>
             </button>
 
-            <button 
+            <button
               onClick={() => window.location.href = "/manage-users"}
               className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-lg transition duration-200 text-center"
             >
@@ -147,7 +141,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Recent Documents */}
         <div className="bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Documents</h3>
           <div className="overflow-x-auto">
@@ -222,6 +215,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
-    </div>
+    </>
   );
 }

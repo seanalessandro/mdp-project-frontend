@@ -1,16 +1,26 @@
+import React from 'react';
+
 interface PaperIconProps {
   className?: string;
 }
 
-export default function PaperIcon({ className = "w-16 h-16" }: PaperIconProps) {
+const PaperIcon: React.FC<PaperIconProps> = ({ className }) => {
   return (
     <svg
       className={className}
+      fill="none"
+      stroke="currentColor"
       viewBox="0 0 24 24"
-      fill="currentColor"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+      />
     </svg>
   );
-}
+};
+
+export default PaperIcon;
