@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { Modal } from "antd";
+import { Modal, Form, Input, Select, Button, Table, Tag, Alert, Typography, Card, Row, Col, Space } from "antd"; // Import komponen Ant Design
+import { LeftOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Import ikon Ant Design
+
+const { Option } = Select;
 
 interface User {
     id: number;
@@ -13,6 +16,8 @@ interface User {
 }
 
 export default function ManageUsersPage() {
+    const [form] = Form.useForm(); // Menggunakan Form hook dari Ant Design
+
     const [users, setUsers] = useState<User[]>([
         { id: 1, username: "User APPS", fullName: "User APPS", role: "APPS", roleDisplay: "APPS/APPC", status: 'active' },
         { id: 2, username: "User APPC", fullName: "User APPC", role: "APPC", roleDisplay: "APPS/APPC", status: 'active' },
@@ -20,58 +25,42 @@ export default function ManageUsersPage() {
         { id: 4, username: "Dept Head", fullName: "Dept Head", role: "DH", roleDisplay: "Dept Head", status: 'active' },
     ]);
 
-    const [formData, setFormData] = useState({
-        username: "",
-        fullName: "",
-        role: "APPS/APPC",
-        password: ""
-    });
-
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [showSuccessMessage, setShowSuccessMessage] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
+    const handleSubmit = (values: any) => {
         if (editingUser) {
             setUsers(users.map(user =>
                 user.id === editingUser.id
-                    ? { ...user, username: formData.username, fullName: formData.fullName, role: formData.role, roleDisplay: formData.role }
+                    ? { ...user, username: values.username, fullName: values.fullName, role: values.role, roleDisplay: values.role }
                     : user
             ));
             setEditingUser(null);
         } else {
             const newUser: User = {
                 id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
-                username: formData.username,
-                fullName: formData.fullName,
-                role: formData.role,
-                roleDisplay: formData.role,
+                username: values.username,
+                fullName: values.fullName,
+                role: values.role,
+                roleDisplay: values.role,
                 status: 'active'
             };
             setUsers([...users, newUser]);
         }
 
-        setFormData({ username: "", fullName: "", role: "APPS/APPC", password: "" });
+        form.resetFields(); // Reset form fields
         setShowSuccessMessage(true);
         setTimeout(() => setShowSuccessMessage(false), 3000);
     };
 
     const handleEdit = (user: User) => {
         setEditingUser(user);
-        setFormData({
+        form.setFieldsValue({ // Set form fields with user data
             username: user.username,
             fullName: user.fullName,
             role: user.role,
-            password: ""
+            password: "" // Password should not be pre-filled for security
         });
     };
 
@@ -87,9 +76,9 @@ export default function ManageUsersPage() {
         });
     };
 
-    const handleCancel = () => {
+    const handleCancelEdit = () => {
         setEditingUser(null);
-        setFormData({ username: "", fullName: "", role: "APPS/APPC", password: "" });
+        form.resetFields(); // Reset form fields
     };
 
     const filteredUsers = users.filter(user =>
@@ -103,237 +92,218 @@ export default function ManageUsersPage() {
             case "APPS":
             case "APPC":
             case "DEV":
-                return "text-green-600";
+                return "green";
             case "DH":
-                return "text-blue-600";
+                return "blue";
             default:
-                return "text-gray-600";
+                return "default";
         }
     };
 
+    const columns = [
+        {
+            title: 'No',
+            key: 'no',
+            render: (_: any, __: any, index: number) => index + 1,
+            width: 50,
+        },
+        {
+            title: 'Username',
+            dataIndex: 'username',
+            key: 'username',
+            sorter: (a: User, b: User) => a.username.localeCompare(b.username),
+        },
+        {
+            title: 'Nama Lengkap',
+            dataIndex: 'fullName',
+            key: 'fullName',
+            sorter: (a: User, b: User) => a.fullName.localeCompare(b.fullName),
+        },
+        {
+            title: 'Role',
+            dataIndex: 'roleDisplay',
+            key: 'roleDisplay',
+            render: (roleDisplay: string, record: User) => (
+                <Tag color={getRoleColor(record.role)}>
+                    {roleDisplay}
+                </Tag>
+            ),
+            sorter: (a: User, b: User) => a.roleDisplay.localeCompare(b.roleDisplay),
+        },
+        {
+            title: 'Status',
+            dataIndex: 'status',
+            key: 'status',
+            render: (status: 'active' | 'inactive') => (
+                <Tag color={status === 'active' ? 'green' : 'red'}>
+                    {status === 'active' ? 'Aktif' : 'Tidak Aktif'}
+                </Tag>
+            ),
+            sorter: (a: User, b: User) => a.status.localeCompare(b.status),
+        },
+        {
+            title: 'Aksi',
+            key: 'aksi',
+            render: (_: any, record: User) => (
+                <Space size="middle">
+                    <Button
+                        icon={<EditOutlined />}
+                        onClick={() => handleEdit(record)}
+                        type="primary"
+                        ghost
+                    >
+                        Edit
+                    </Button>
+                    <Button
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleDelete(record.id)}
+                        type="primary"
+                        danger
+                    >
+                        Hapus
+                    </Button>
+                </Space>
+            ),
+            width: 150,
+        },
+    ];
+
     return (
         <>
-            <nav className="bg-blue-600 text-white p-4 -mx-6 -mt-6 rounded-t-xl">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                        <button
-                            onClick={() => window.location.href = "/dashboard"}
-                            className="text-white hover:text-blue-200 transition duration-200"
+            {/* Navigation Bar */}
+            <Card className="-mx-6 -mt-6 rounded-t-xl rounded-b-none shadow-sm border-b">
+                <Row align="middle" justify="space-between">
+                    <Col>
+                        <Space>
+                            <Button
+                                type="text"
+                                icon={<LeftOutlined />}
+                                onClick={() => window.location.href = "/dashboard"}
+                                className="!text-white hover:!text-blue-200"
+                            />
+                            <Typography.Title level={3} className="!text-xl !font-semibold !text-gray-800 !mb-0">
+                                Panel Manajemen User
+                            </Typography.Title>
+                        </Space>
+                    </Col>
+                    <Col>
+                        <Button
+                            type="primary"
+                            danger
+                            onClick={() => window.location.href = "/login"}
                         >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                        </button>
-                        <h1 className="text-xl font-semibold">Panel Manajemen User</h1>
-                    </div>
-                    <button
-                        onClick={() => window.location.href = "/login"}
-                        className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded text-sm font-medium transition duration-200"
-                    >
-                        Logout
-                    </button>
-                </div>
-            </nav>
+                            Logout
+                        </Button>
+                    </Col>
+                </Row>
+            </Card>
 
             <div className="max-w-7xl mx-auto p-6">
                 {showSuccessMessage && (
-                    <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                        {editingUser ? "User berhasil diupdate!" : "User berhasil ditambahkan!"}
-                    </div>
+                    <Alert
+                        message={editingUser ? "User berhasil diupdate!" : "User berhasil ditambahkan!"}
+                        type="success"
+                        showIcon
+                        closable
+                        onClose={() => setShowSuccessMessage(false)}
+                        className="mb-4"
+                    />
                 )}
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-1">
-                        <div className="bg-white rounded-lg shadow-md p-6">
-                            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                                {editingUser ? "Edit User" : "Tambah User Baru"}
-                            </h2>
+                <Row gutter={[24, 24]}>
+                    {/* Left Side - Form */}
+                    <Col xs={24} lg={8}>
+                        <Card title={<Typography.Title level={4} className="!text-lg !font-semibold !text-gray-800 !mb-0">{editingUser ? "Edit User" : "Tambah User Baru"}</Typography.Title>} className="rounded-lg shadow-md">
+                            <Form
+                                form={form}
+                                layout="vertical"
+                                onFinish={handleSubmit}
+                                initialValues={editingUser || { role: "APPS/APPC" }}
+                            >
+                                <Form.Item
+                                    label="Username"
+                                    name="username"
+                                    rules={[{ required: true, message: 'Mohon masukkan username!' }]}
+                                >
+                                    <Input placeholder="Masukkan username" />
+                                </Form.Item>
 
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Username
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="username"
-                                        value={formData.username}
-                                        onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Masukkan username"
-                                        required
-                                    />
-                                </div>
+                                <Form.Item
+                                    label="Nama Lengkap"
+                                    name="fullName"
+                                    rules={[{ required: true, message: 'Mohon masukkan nama lengkap!' }]}
+                                >
+                                    <Input placeholder="Masukkan nama lengkap" />
+                                </Form.Item>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Nama Lengkap
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="fullName"
-                                        value={formData.fullName}
-                                        onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Masukkan nama lengkap"
-                                        required
-                                    />
-                                </div>
+                                <Form.Item
+                                    label="Role"
+                                    name="role"
+                                    rules={[{ required: true, message: 'Mohon pilih role!' }]}
+                                >
+                                    <Select placeholder="Pilih Role">
+                                        <Option value="APPS/APPC">APPS/APPC</Option>
+                                        <Option value="Developer">Developer</Option>
+                                        <Option value="Dept Head">Dept Head</Option>
+                                        <Option value="Admin">Admin</Option>
+                                    </Select>
+                                </Form.Item>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Role
-                                    </label>
-                                    <select
-                                        name="role"
-                                        value={formData.role}
-                                        onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    >
-                                        <option value="APPS/APPC">APPS/APPC</option>
-                                        <option value="Developer">Developer</option>
-                                        <option value="Dept Head">Dept Head</option>
-                                        <option value="Admin">Admin</option>
-                                    </select>
-                                </div>
+                                <Form.Item
+                                    label="Password"
+                                    name="password"
+                                    rules={[{ required: !editingUser, message: 'Mohon masukkan password!' }]}
+                                >
+                                    <Input.Password placeholder="Masukkan password" />
+                                </Form.Item>
+                                {editingUser && (
+                                    <Typography.Text type="secondary" className="!text-xs !block !mb-4">Kosongkan jika tidak ingin mengubah password</Typography.Text>
+                                )}
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Password
-                                    </label>
-                                    <input
-                                        type="password"
-                                        name="password"
-                                        value={formData.password}
-                                        onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Masukkan password"
-                                        required={!editingUser}
-                                    />
-                                    {editingUser && (
-                                        <p className="text-xs text-gray-500 mt-1">Kosongkan jika tidak ingin mengubah password</p>
-                                    )}
-                                </div>
-
-                                <div className="flex space-x-3">
-                                    <button
-                                        type="submit"
-                                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-medium transition duration-200"
+                                <Space>
+                                    <Button
+                                        type="primary"
+                                        htmlType="submit"
                                     >
                                         {editingUser ? "Update" : "Simpan"}
-                                    </button>
+                                    </Button>
 
                                     {editingUser && (
-                                        <button
-                                            type="button"
-                                            onClick={handleCancel}
-                                            className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md font-medium transition duration-200"
+                                        <Button
+                                            onClick={handleCancelEdit}
                                         >
                                             Batal
-                                        </button>
+                                        </Button>
                                     )}
-                                </div>
-                            </form>
-                        </div>
-                    </div>
+                                </Space>
+                            </Form>
+                        </Card>
+                    </Col>
 
-                    <div className="lg:col-span-2">
-                        <div className="bg-white rounded-lg shadow-md p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-lg font-semibold text-gray-800">Daftar User</h2>
-                                <div className="flex items-center space-x-2">
-                                    <input
-                                        type="text"
-                                        placeholder="Cari user..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    />
-                                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                    </svg>
-                                </div>
+                    {/* Right Side - User List */}
+                    <Col xs={24} lg={16}>
+                        <Card title={<Typography.Title level={4} className="!text-lg !font-semibold !text-gray-800 !mb-0">Daftar User</Typography.Title>} className="rounded-lg shadow-md">
+                            <div className="mb-4">
+                                <Input.Search
+                                    placeholder="Cari user..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    enterButton={<SearchOutlined />}
+                                    size="large"
+                                />
                             </div>
 
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                No
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Username
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Nama Lengkap
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Role
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Status
-                                            </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Aksi
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {filteredUsers.map((user, index) => (
-                                            <tr key={user.id} className="hover:bg-gray-50">
-                                                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    {index + 1}
-                                                </td>
-                                                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                    {user.username}
-                                                </td>
-                                                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                    {user.fullName}
-                                                </td>
-                                                <td className="px-4 py-4 whitespace-nowrap">
-                                                    <span className={`text-sm font-medium ${getRoleColor(user.role)}`}>
-                                                        {user.roleDisplay}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-4 whitespace-nowrap">
-                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.status === 'active'
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : 'bg-red-100 text-red-800'
-                                                        }`}>
-                                                        {user.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                                                    <div className="flex space-x-2">
-                                                        <button
-                                                            onClick={() => handleEdit(user)}
-                                                            className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded transition duration-200"
-                                                        >
-                                                            Edit
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDelete(user.id)}
-                                                            className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded transition duration-200"
-                                                        >
-                                                            Hapus
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-
-                                {filteredUsers.length === 0 && (
-                                    <div className="text-center py-8 text-gray-500">
-                                        {searchTerm ? "Tidak ada user yang ditemukan" : "Belum ada user"}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                            <Table
+                                columns={columns}
+                                dataSource={filteredUsers}
+                                rowKey="id"
+                                pagination={{ pageSize: 10 }} // Tambahkan paginasi
+                                scroll={{ x: 'max-content' }} // Untuk scroll horizontal pada layar kecil
+                                locale={{ emptyText: searchTerm ? "Tidak ada user yang ditemukan" : "Belum ada user" }}
+                            />
+                        </Card>
+                    </Col>
+                </Row>
             </div>
         </>
     );

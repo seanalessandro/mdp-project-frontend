@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Modal } from "antd";
+import { Modal, Form, Input, Button, Table, Tag, Alert, Typography, Card, Row, Col, Space } from "antd"; // Import komponen Ant Design
+import { LeftOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'; // Import ikon Ant Design
 
 interface Role {
   id: number;
@@ -11,6 +12,8 @@ interface Role {
 }
 
 export default function ManageRolesPage() {
+  const [form] = Form.useForm(); // Menggunakan Form hook dari Ant Design
+
   const [roles, setRoles] = useState<Role[]>([
     { id: 1, name: "Admin", description: "Hak akses penuh ke sistem", status: 'active' },
     { id: 2, name: "Developer", description: "Mengembangkan dan memelihara aplikasi", status: 'active' },
@@ -35,10 +38,8 @@ export default function ManageRolesPage() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name.trim()) {
+  const handleSubmit = (values: any) => { // Menerima values dari Form Ant Design
+    if (!values.name.trim()) {
       Modal.info({
         title: 'Peringatan',
         content: 'Nama peran tidak boleh kosong!',
@@ -49,28 +50,28 @@ export default function ManageRolesPage() {
     if (editingRole) {
       setRoles(roles.map(role =>
         role.id === editingRole.id
-          ? { ...role, name: formData.name, description: formData.description }
+          ? { ...role, name: values.name, description: values.description }
           : role
       ));
       setEditingRole(null);
     } else {
       const newRole: Role = {
         id: roles.length > 0 ? Math.max(...roles.map(r => r.id)) + 1 : 1,
-        name: formData.name,
-        description: formData.description,
+        name: values.name,
+        description: values.description,
         status: 'active'
       };
       setRoles([...roles, newRole]);
     }
 
-    setFormData({ name: "", description: "" });
+    form.resetFields(); // Reset form fields
     setShowSuccessMessage(true);
     setTimeout(() => setShowSuccessMessage(false), 3000);
   };
 
   const handleEdit = (role: Role) => {
     setEditingRole(role);
-    setFormData({
+    form.setFieldsValue({ // Set form fields with role data
       name: role.name,
       description: role.description
     });
@@ -88,9 +89,9 @@ export default function ManageRolesPage() {
     });
   };
 
-  const handleCancel = () => {
+  const handleCancelEdit = () => {
     setEditingRole(null);
-    setFormData({ name: "", description: "" });
+    form.resetFields(); // Reset form fields
   };
 
   const filteredRoles = roles.filter(role =>
@@ -99,187 +100,178 @@ export default function ManageRolesPage() {
   );
 
   const getStatusColor = (status: 'active' | 'inactive') => {
-    return status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+    return status === 'active' ? 'green' : 'red';
   };
+
+  const columns = [
+    {
+      title: 'No',
+      key: 'no',
+      render: (_: any, __: any, index: number) => index + 1,
+      width: 50,
+    },
+    {
+      title: 'Nama Peran',
+      dataIndex: 'name',
+      key: 'name',
+      sorter: (a: Role, b: Role) => a.name.localeCompare(b.name),
+    },
+    {
+      title: 'Deskripsi',
+      dataIndex: 'description',
+      key: 'description',
+      render: (description: string) => description || '-',
+      sorter: (a: Role, b: Role) => (a.description || '').localeCompare(b.description || ''),
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: 'active' | 'inactive') => (
+        <Tag color={getStatusColor(status)}>
+          {status === 'active' ? 'Aktif' : 'Tidak Aktif'}
+        </Tag>
+      ),
+      sorter: (a: Role, b: Role) => a.status.localeCompare(b.status),
+    },
+    {
+      title: 'Aksi',
+      key: 'aksi',
+      render: (_: any, record: Role) => (
+        <Space size="middle">
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+            type="primary"
+            ghost
+          >
+            Edit
+          </Button>
+          <Button
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record.id)}
+            type="primary"
+            danger
+          >
+            Hapus
+          </Button>
+        </Space>
+      ),
+      width: 150,
+    },
+  ];
 
   return (
     <>
-      <nav className="bg-blue-600 text-white p-4 -mx-6 -mt-6 rounded-t-xl">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => window.location.href = "/dashboard"}
-              className="text-white hover:text-blue-200 transition duration-200"
+      {/* Navigation Bar */}
+      <Card className="-mx-6 -mt-6 rounded-t-xl rounded-b-none shadow-sm border-b">
+        <Row align="middle" justify="space-between">
+          <Col>
+            <Space>
+              <Button
+                type="text"
+                icon={<LeftOutlined />}
+                onClick={() => window.location.href = "/dashboard"}
+                className="!text-white hover:!text-blue-200"
+              />
+              <Typography.Title level={3} className="!text-xl !font-semibold !text-gray-800 !mb-0">
+                Panel Manajemen Role
+              </Typography.Title>
+            </Space>
+          </Col>
+          <Col>
+            <Button
+              type="primary"
+              danger
+              onClick={() => window.location.href = "/login"}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <h1 className="text-xl font-semibold">Panel Manajemen Role</h1>
-          </div>
-          <button
-            onClick={() => window.location.href = "/login"}
-            className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded text-sm font-medium transition duration-200"
-          >
-            Logout
-          </button>
-        </div>
-      </nav>
+              Logout
+            </Button>
+          </Col>
+        </Row>
+      </Card>
 
       <div className="max-w-7xl mx-auto p-6">
         {showSuccessMessage && (
-          <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-            {editingRole ? "Peran berhasil diupdate!" : "Peran berhasil ditambahkan!"}
-          </div>
+          <Alert
+            message={editingRole ? "Peran berhasil diupdate!" : "Peran berhasil ditambahkan!"}
+            type="success"
+            showIcon
+            closable
+            onClose={() => setShowSuccessMessage(false)}
+            className="mb-4"
+          />
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                {editingRole ? "Edit Peran" : "Tambah Peran Baru"}
-              </h2>
+        <Row gutter={[24, 24]}>
+          {/* Left Side - Form untuk Tambah/Edit Role */}
+          <Col xs={24} lg={8}>
+            <Card title={<Typography.Title level={4} className="!text-lg !font-semibold !text-gray-800 !mb-0">{editingRole ? "Edit Peran" : "Tambah Peran Baru"}</Typography.Title>} className="rounded-lg shadow-md">
+              <Form
+                form={form}
+                layout="vertical"
+                onFinish={handleSubmit}
+                initialValues={editingRole || {}} // Pastikan initialValues diatur
+              >
+                <Form.Item
+                  label="Nama Peran"
+                  name="name"
+                  rules={[{ required: true, message: 'Mohon masukkan nama peran!' }]}
+                >
+                  <Input placeholder="Masukkan nama peran (misal: Admin)" />
+                </Form.Item>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Nama Peran
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Masukkan nama peran (misal: Admin)"
-                    required
-                  />
-                </div>
+                <Form.Item
+                  label="Deskripsi"
+                  name="description"
+                >
+                  <Input.TextArea rows={3} placeholder="Deskripsi singkat peran ini (opsional)" />
+                </Form.Item>
 
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                    Deskripsi
-                  </label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Deskripsi singkat peran ini (opsional)"
-                  />
-                </div>
-
-                <div className="flex space-x-3">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-medium transition duration-200"
+                <Space>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
                   >
                     {editingRole ? "Update Peran" : "Simpan Peran"}
-                  </button>
+                  </Button>
 
                   {editingRole && (
-                    <button
-                      type="button"
-                      onClick={handleCancel}
-                      className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md font-medium transition duration-200"
+                    <Button
+                      onClick={handleCancelEdit}
                     >
                       Batal
-                    </button>
+                    </Button>
                   )}
-                </div>
-              </form>
-            </div>
-          </div>
+                </Space>
+              </Form>
+            </Card>
+          </Col>
 
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-800">Daftar Peran</h2>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="text"
-                    placeholder="Cari peran..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
+          {/* Right Side - Daftar Peran */}
+          <Col xs={24} lg={16}>
+            <Card title={<Typography.Title level={4} className="!text-lg !font-semibold !text-gray-800 !mb-0">Daftar Peran</Typography.Title>} className="rounded-lg shadow-md">
+              <div className="mb-4">
+                <Input.Search
+                  placeholder="Cari peran..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  enterButton={<SearchOutlined />}
+                  size="large"
+                />
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        No
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Nama Peran
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Deskripsi
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Aksi
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredRoles.map((role, index) => (
-                      <tr key={role.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {index + 1}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {role.name}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {role.description || '-'}
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(role.status)}`}>
-                            {role.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleEdit(role)}
-                              className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded transition duration-200"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDelete(role.id)}
-                              className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded transition duration-200"
-                            >
-                              Hapus
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {filteredRoles.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    {searchTerm ? "Tidak ada peran yang ditemukan" : "Belum ada peran"}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+              <Table
+                columns={columns}
+                dataSource={filteredRoles}
+                rowKey="id"
+                pagination={{ pageSize: 10 }} // Tambahkan paginasi
+                scroll={{ x: 'max-content' }} // Untuk scroll horizontal pada layar kecil
+                locale={{ emptyText: searchTerm ? "Tidak ada peran yang ditemukan" : "Belum ada peran" }}
+              />
+            </Card>
+          </Col>
+        </Row>
       </div>
     </>
   );
