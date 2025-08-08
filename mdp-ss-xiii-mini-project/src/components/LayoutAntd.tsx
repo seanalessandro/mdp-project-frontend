@@ -1,6 +1,6 @@
-"use client";
+"use client"; // Tambahkan ini di baris paling atas
 
-import React, { useState, useEffect } from 'react'; // Import useEffect
+import React, { useState } from 'react';
 import {
     DesktopOutlined,
     FileOutlined,
@@ -9,7 +9,7 @@ import {
     UserOutlined,
 } from '@ant-design/icons';
 import { Breadcrumb, Layout, Menu, theme } from 'antd';
-import type { MenuProps } from 'antd';
+import type { MenuProps } from 'antd'; // Perbaikan: Menambahkan 'from'
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -47,16 +47,9 @@ interface LayoutAntdProps {
 
 const LayoutAntd: React.FC<LayoutAntdProps> = ({ children }) => {
     const [collapsed, setCollapsed] = useState<boolean>(false);
-    const [currentYear, setCurrentYear] = useState<number | null>(null); // State untuk tahun
-
     const {
         token: { colorBgContainer, borderRadiusLG },
     } = theme.useToken();
-
-    // Jalankan hanya di sisi klien setelah komponen ter-mount
-    useEffect(() => {
-        setCurrentYear(new Date().getFullYear());
-    }, []);
 
     return (
         <Layout style={{ minHeight: '100vh' }}>
@@ -80,8 +73,7 @@ const LayoutAntd: React.FC<LayoutAntdProps> = ({ children }) => {
                     </div>
                 </Content>
                 <Footer style={{ textAlign: 'center' }}>
-                    {/* Tampilkan tahun dari state, yang hanya akan ada di klien */}
-                    Ant Design ©{currentYear} Created by Ant UED
+                    Ant Design ©{new Date().getFullYear()} Created by Ant UED
                 </Footer>
             </Layout>
         </Layout>
