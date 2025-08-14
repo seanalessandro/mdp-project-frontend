@@ -16,17 +16,17 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
-  
+
   if (response.status === 204) {
     return;
   }
-  
+
   const data = await response.json();
 
   if (!response.ok) {
     throw new Error(data.error || 'An API error occurred');
   }
-  
+
   return data;
 }
 
@@ -51,6 +51,14 @@ export const updateRole = (id: string, roleData: RoleRequest) => fetchApi(`/admi
 export const deleteRole = (id: string) => fetchApi(`/admin/roles/${id}`, {
   method: 'DELETE',
 });
+
+export const updateRoleStatus = (id: string, isActive: boolean) => fetchApi(`/admin/roles/${id}/status`, {
+  method: 'PATCH',
+  body: JSON.stringify({ isActive }),
+});
+
+// Fungsi ini akan dipanggil oleh SWR di halaman manage-roles
+export const getPermissions = () => fetchApi('/admin/permissions');
 
 // === User Management Endpoints ===
 export const getUsers = () => fetchApi('/admin/users');

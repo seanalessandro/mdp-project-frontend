@@ -2,22 +2,23 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Modal,
   Form,
   Input,
   Button,
   Table,
   Tag,
-  Alert,
   Typography,
   Card,
   Row,
   Col,
   Space,
   Popconfirm,
-  message
+  message,
+  Select,
+  Alert,
+  Switch // <-- Pastikan Switch di-import
 } from "antd";
-import { EditOutlined, DeleteOutlined, SearchOutlined, PlusOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import useSWR from 'swr';
 import * as api from '@/lib/api';
 import { Role } from "@/lib/types";
@@ -25,39 +26,30 @@ import { Role } from "@/lib/types";
 export default function ManageRolesPage() {
   const [form] = Form.useForm();
   const [editingRole, setEditingRole] = useState<Role | null>(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { data: roles, error, mutate, isLoading } = useSWR('/admin/roles', api.getRoles);
+  // Mengambil daftar role
+  const { data: roles, error: rolesError, mutate: mutateRoles, isLoading: isLoadingRoles } = useSWR('/admin/roles', api.getRoles);
+
+  // Mengambil daftar permission dari API untuk dropdown
+  const { data: allPermissions, error: permissionsError, isLoading: isLoadingPermissions } = useSWR('/admin/permissions', api.getPermissions);
 
   useEffect(() => {
     // Mengisi form saat mode edit aktif
     if (editingRole) {
-      form.setFieldsValue({
-        name: editingRole.name,
-        description: editingRole.description,
-        permissions: editingRole.permissions.join(', ')
-      });
+      form.setFieldsValue(editingRole);
     } else {
       form.resetFields();
     }
   }, [editingRole, form]);
 
-  const handleOpenModal = (role?: Role) => {
-    setEditingRole(role || null);
-    setIsModalVisible(true);
-  };
-
-  const handleCancelModal = () => {
-    setIsModalVisible(false);
+  const handleCancelEdit = () => {
     setEditingRole(null);
     form.resetFields();
   };
 
   const handleSubmit = async (values: any) => {
-    const permissions = values.permissions ? values.permissions.split(',').map((p: string) => p.trim()).filter(Boolean) : [];
-    const roleData = { ...values, permissions };
-
+    const roleData = { ...values };
     try {
       if (editingRole) {
         await api.updateRole(editingRole.id, roleData);
@@ -66,31 +58,34 @@ export default function ManageRolesPage() {
         await api.createRole(roleData);
         message.success("Peran berhasil ditambahkan!");
       }
-      mutate(); // Refresh data tabel
-      handleCancelModal();
+      mutateRoles(); // Memuat ulang data tabel
+      handleCancelEdit(); // Mengosongkan form
     } catch (err: any) {
       message.error(err.message);
     }
   };
 
-  const handleDelete = async (role: Role) => {
-    if (role.isDefault) {
-      message.error("Role default tidak dapat dihapus.");
-      return;
-    }
+  const handleDelete = async (roleId: string) => {
     try {
-      await api.deleteRole(role.id);
-      message.success("Peran berhasil dinonaktifkan!");
-      mutate();
+      await api.deleteRole(roleId);
+      message.success("Peran berhasil dihapus!");
+      mutateRoles();
     } catch (err: any) {
       message.error(err.message);
     }
   };
 
-  const filteredRoles = roles?.filter((role: Role) =>
-    role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    role.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleStatusChange = async (role: Role, checked: boolean) => {
+    try {
+      await api.updateRoleStatus(role.id, checked);
+      message.success(`Status peran ${role.name} berhasil diubah!`);
+      mutateRoles();
+    } catch (err: any) {
+      message.error(err.message);
+      // Revert the switch state on failure if needed
+      mutateRoles();
+    }
+  };
 
   const columns = [
     {
@@ -108,36 +103,47 @@ export default function ManageRolesPage() {
       title: 'Permissions',
       dataIndex: 'permissions',
       key: 'permissions',
-      render: (perms: string[]) => <>{perms.map(p => <Tag key={p} color="blue">{p}</Tag>)}</>
+      render: (perms: string[]) => <>{(perms || []).map(p => <Tag key={p} color="blue">{p}</Tag>)}</>
     },
     {
       title: 'Status',
       dataIndex: 'isActive',
       key: 'isActive',
-      render: (isActive: boolean) => <Tag color={isActive ? 'green' : 'red'}>{isActive ? 'Aktif' : 'Tidak Aktif'}</Tag>
+      render: (isActive: boolean, record: Role) => (
+        <Switch
+          checkedChildren="Aktif"
+          unCheckedChildren="Nonaktif"
+          checked={isActive}
+          onChange={(checked) => handleStatusChange(record, checked)}
+        />
+      )
     },
     {
       title: 'Aksi',
       key: 'aksi',
       render: (_: any, record: Role) => (
         <Space size="middle">
-          <Button icon={<EditOutlined />} onClick={() => handleOpenModal(record)}>Edit</Button>
+          <Button icon={<EditOutlined />} onClick={() => setEditingRole(record)}>Edit</Button>
           <Popconfirm
-            title="Nonaktifkan Peran"
-            description="Apakah Anda yakin ingin menonaktifkan peran ini?"
-            onConfirm={() => handleDelete(record)}
-            okText="Ya"
+            title="Hapus Peran"
+            description="Apakah Anda yakin ingin menghapus peran ini secara permanen?"
+            onConfirm={() => handleDelete(record.id)}
+            okText="Ya, Hapus"
             cancelText="Tidak"
             disabled={record.isDefault}
           >
-            <Button icon={<DeleteOutlined />} danger disabled={record.isDefault}>Deactivate</Button>
+            <Button icon={<DeleteOutlined />} danger disabled={record.isDefault}>Hapus</Button>
           </Popconfirm>
         </Space>
       ),
     },
   ];
 
-  if (error) return <Alert message="Error" description="Gagal memuat data peran." type="error" showIcon />;
+  if (rolesError || permissionsError) return <Alert message="Error" description="Gagal memuat data." type="error" showIcon />;
+
+  const filteredRoles = roles?.filter((role: Role) =>
+    role.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Space direction="vertical" size="large" style={{ display: 'flex' }}>
@@ -146,21 +152,37 @@ export default function ManageRolesPage() {
       <Row gutter={[24, 24]}>
         {/* Kolom Kiri - Form Tambah/Edit */}
         <Col xs={24} lg={8}>
-          <Card title={editingRole ? "Edit Peran" : "Tambah Peran Baru"} bordered={false} style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }}>
+          <Card title={editingRole ? `Edit Peran: ${editingRole.name}` : "Tambah Peran Baru"} bordered={false}>
             <Form form={form} layout="vertical" onFinish={handleSubmit}>
               <Form.Item name="name" label="Nama Peran" rules={[{ required: true, message: 'Nama peran tidak boleh kosong' }]}>
                 <Input placeholder="Contoh: Marketing" />
               </Form.Item>
               <Form.Item name="description" label="Deskripsi">
-                <Input.TextArea rows={3} placeholder="Penjelasan singkat tentang peran ini" />
+                <Input.TextArea rows={3} placeholder="Penjelasan singkat" />
               </Form.Item>
-              <Form.Item name="permissions" label="Permissions (pisahkan dengan koma)">
-                <Input placeholder="Contoh: content:create, content:read" />
+
+              <Form.Item name="permissions" label="Permissions">
+                <Select
+                  mode="multiple"
+                  allowClear
+                  style={{ width: '100%' }}
+                  placeholder="Pilih permissions"
+                  loading={isLoadingPermissions}
+                >
+                  {(allPermissions || []).map((permission: string) => (
+                    <Select.Option key={permission} value={permission}>
+                      {permission}
+                    </Select.Option>
+                  ))}
+                </Select>
               </Form.Item>
+
               <Form.Item>
                 <Space>
-                  <Button type="primary" htmlType="submit">{editingRole ? "Update Peran" : "Simpan Peran"}</Button>
-                  {editingRole && <Button onClick={handleCancelModal}>Batal</Button>}
+                  <Button type="primary" htmlType="submit">
+                    {editingRole ? "Update Peran" : "Simpan Peran"}
+                  </Button>
+                  {editingRole && <Button onClick={handleCancelEdit}>Batal</Button>}
                 </Space>
               </Form.Item>
             </Form>
@@ -169,28 +191,25 @@ export default function ManageRolesPage() {
 
         {/* Kolom Kanan - Tabel Daftar Peran */}
         <Col xs={24} lg={16}>
-          <Card title="Daftar Peran" bordered={false} style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }}>
-            <Input.Search
-              placeholder="Cari peran..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              enterButton={<SearchOutlined />}
-              size="large"
-              className="mb-4"
-            />
-            <Table
-              columns={columns}
-              dataSource={filteredRoles}
-              rowKey="id"
-              loading={isLoading}
-              pagination={{ pageSize: 5 }}
-              scroll={{ x: 'max-content' }}
-            />
+          <Card title="Daftar Role" bordered={false}>
+            <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
+              <Input.Search
+                placeholder="Cari peran..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <Table
+                columns={columns}
+                dataSource={filteredRoles}
+                rowKey="id"
+                loading={isLoadingRoles}
+                pagination={{ pageSize: 5 }}
+                scroll={{ x: 'max-content' }}
+              />
+            </Space>
           </Card>
         </Col>
       </Row>
-
-      {/* Modal tidak lagi diperlukan di sini karena kita menggunakan Card */}
     </Space>
   );
 }
