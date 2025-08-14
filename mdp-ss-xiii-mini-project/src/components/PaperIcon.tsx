@@ -1,13 +1,15 @@
 import React from 'react';
 
+// --- PERBAIKI DI SINI: Ubah 'className' menjadi 'style' ---
 interface PaperIconProps {
-  className?: string;
+  style?: React.CSSProperties;
 }
 
-const PaperIcon: React.FC<PaperIconProps> = ({ className }) => {
+const PaperIcon: React.FC<PaperIconProps> = ({ style }) => {
+  // --------------------------------------------------------
   return (
     <svg
-      className={className}
+      style={style} // Gunakan 'style' di sini, bukan className
       fill="none"
       stroke="currentColor"
       viewBox="0 0 24 24"

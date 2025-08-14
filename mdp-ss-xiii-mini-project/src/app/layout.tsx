@@ -1,22 +1,19 @@
+// /src/app/layout.tsx
+import React from 'react';
+import { AntdRegistry } from '@ant-design/nextjs-registry';
+import { AuthProvider } from '@/context/AuthContext';
 import './globals.css';
-import LayoutAntd from '@/components/LayoutAntd';
-import StyledComponentsRegistry from '@/components/AntdRegistry';
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <body>
-        {/* Membungkus LayoutAntd dan children dengan StyledComponentsRegistry */}
-        <StyledComponentsRegistry>
-          <LayoutAntd>
-            {children}
-          </LayoutAntd>
-        </StyledComponentsRegistry>
-      </body>
-    </html>
-  );
-}
+const RootLayout = ({ children }: { children: React.ReactNode }) => (
+  <html lang="en">
+    <body>
+      <AntdRegistry>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </AntdRegistry>
+    </body>
+  </html>
+);
+
+export default RootLayout;

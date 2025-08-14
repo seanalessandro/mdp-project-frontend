@@ -1,0 +1,95 @@
+// /src/context/AuthContext.tsx
+"use client";
+
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { User, Role, LoginRequest } from '@/lib/types';
+import * as api from '@/lib/api';
+import { Spin } from 'antd';
+
+interface AuthContextType {
+  user: User | null;
+  role: Role | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (credentials: LoginRequest) => Promise<void>;
+  logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<Role | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    const storedRole = localStorage.getItem('role');
+
+    if (storedToken && storedUser && storedRole) {
+      setUser(JSON.parse(storedUser));
+      setRole(JSON.parse(storedRole));
+    }
+    setIsLoading(false);
+  }, []);
+
+  const login = async (credentials: LoginRequest) => {
+    const response = await api.loginUser(credentials);
+    setUser(response.user);
+    setRole(response.role);
+    localStorage.setItem('user', JSON.stringify(response.user));
+    localStorage.setItem('role', JSON.stringify(response.role));
+    localStorage.setItem('token', response.token);
+    router.push('/dashboard');
+  };
+
+  const logout = async () => {
+    try {
+      await api.logoutUser();
+    } catch (error) {
+      console.error("Logout API failed, proceeding with client-side logout.", error);
+    } finally {
+      setUser(null);
+      setRole(null);
+      localStorage.removeItem('user');
+      localStorage.removeItem('role');
+      localStorage.removeItem('token');
+      router.push('/auth/login');
+    }
+  };
+
+  useEffect(() => {
+    if (isLoading) return;
+    const isAuthPage = pathname.startsWith('/auth');
+    const isAuthenticated = !!localStorage.getItem('token');
+
+    if (!isAuthenticated && !isAuthPage) {
+      router.push('/auth/login');
+    }
+    if (isAuthenticated && isAuthPage) {
+      router.push('/dashboard');
+    }
+  }, [isLoading, pathname, router]);
+  
+  if (isLoading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Spin size="large" /></div>;
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, role, isAuthenticated: !!user, isLoading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
