@@ -25,22 +25,33 @@ export default function ChangePasswordModal({ visible, onCancel, onSuccess }: Ch
 
     // Check if passwords match
     if (values.newPassword !== values.confirmPassword) {
-      message.error('New passwords do not match');
+      message.error('Password baru dan konfirmasi password tidak cocok');
       return;
     }
 
     setLoading(true);
     try {
       await apiService.changePassword({
-        old_password: values.oldPassword,
-        new_password: values.newPassword,
+        oldPassword: values.oldPassword,
+        newPassword: values.newPassword,
       });
 
-      message.success('Password changed successfully');
+      message.success('Password berhasil diubah! Silakan login kembali dengan password baru Anda.', 4);
       form.resetFields();
       onSuccess();
     } catch (error) {
-      message.error(error instanceof Error ? error.message : 'Failed to change password');
+      const errorMessage = error instanceof Error ? error.message : 'Gagal mengubah password';
+      
+      // Provide more specific error messages
+      if (errorMessage.includes('password lama') || errorMessage.includes('old password') || errorMessage.includes('incorrect')) {
+        message.error('Password lama yang Anda masukkan salah. Silakan coba lagi.');
+      } else if (errorMessage.includes('validation') || errorMessage.includes('requirement')) {
+        message.error('Password baru tidak memenuhi persyaratan. Pastikan minimal 8 karakter dengan kombinasi huruf, angka, dan karakter khusus.');
+      } else if (errorMessage.includes('unauthorized') || errorMessage.includes('token')) {
+        message.error('Sesi Anda telah berakhir. Silakan login kembali.');
+      } else {
+        message.error(`Gagal mengubah password: ${errorMessage}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -48,7 +59,7 @@ export default function ChangePasswordModal({ visible, onCancel, onSuccess }: Ch
 
   return (
     <Modal
-      title="Change Password"
+      title="Ganti Password"
       open={visible}
       onCancel={onCancel}
       footer={null}
@@ -60,44 +71,48 @@ export default function ChangePasswordModal({ visible, onCancel, onSuccess }: Ch
         onFinish={handleSubmit}
       >
         <Form.Item
-          label="Current Password"
+          label="Password Lama"
           name="oldPassword"
-          rules={[{ required: true, message: 'Please enter your current password' }]}
+          rules={[{ required: true, message: 'Masukkan password lama Anda' }]}
         >
-          <Input.Password placeholder="Enter current password" />
+          <Input.Password placeholder="Masukkan password lama" />
         </Form.Item>
 
         <Form.Item
-          label="New Password"
+          label="Password Baru"
           name="newPassword"
-          rules={[{ required: true, message: 'Please enter new password' }]}
+          rules={[{ required: true, message: 'Masukkan password baru' }]}
         >
-          <Input.Password placeholder="Enter new password" />
+          <Input.Password placeholder="Masukkan password baru" />
         </Form.Item>
 
         <Form.Item
-          label="Confirm New Password"
+          label="Konfirmasi Password Baru"
           name="confirmPassword"
-          rules={[{ required: true, message: 'Please confirm new password' }]}
+          rules={[{ required: true, message: 'Konfirmasi password baru' }]}
         >
-          <Input.Password placeholder="Confirm new password" />
+          <Input.Password placeholder="Konfirmasi password baru" />
         </Form.Item>
 
-        <div className="flex justify-end space-x-2">
-          <Button onClick={onCancel}>Cancel</Button>
-          <Button type="primary" htmlType="submit" loading={loading}>
-            Change Password
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+          <Button onClick={onCancel}>Batal</Button>
+          <Button 
+            type="primary" 
+            htmlType="submit" 
+            loading={loading}
+          >
+            Ganti Password
           </Button>
         </div>
       </Form>
 
-      <div className="mt-4 p-3 bg-gray-50 rounded">
-        <p className="text-xs text-gray-600 font-semibold mb-1">Password requirements:</p>
-        <ul className="text-xs text-gray-500 space-y-1">
-          <li>• At least 8 characters long</li>
-          <li>• Contains at least one letter</li>
-          <li>• Contains at least one number</li>
-          <li>• Contains at least one special character</li>
+      <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+        <p style={{ fontSize: '12px', color: '#666', fontWeight: 600, marginBottom: '4px' }}>Persyaratan password:</p>
+        <ul style={{ fontSize: '12px', color: '#999', margin: 0, paddingLeft: '16px' }}>
+          <li style={{ marginBottom: '4px' }}>• Minimal 8 karakter</li>
+          <li style={{ marginBottom: '4px' }}>• Mengandung minimal satu huruf</li>
+          <li style={{ marginBottom: '4px' }}>• Mengandung minimal satu angka</li>
+          <li>• Mengandung minimal satu karakter khusus</li>
         </ul>
       </div>
     </Modal>

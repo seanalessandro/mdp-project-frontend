@@ -10,19 +10,31 @@ export default function LoginPage() {
     const { login } = useAuth();
     const [form] = Form.useForm();
 
-    const handleLogin = async (values: any) => {
+    const handleLogin = async (values: { username: string; password: string }) => {
         setLoading(true);
         try {
             // Panggil fungsi login dari context
             await login(values);
 
             // --- TAMBAHAN: Tampilkan pesan sukses SETELAH login berhasil ---
-            message.success('Login berhasil! Mengarahkan ke dashboard...');
+            message.success('Login berhasil! Mengarahkan ke dashboard...', 2);
             // Redirect akan di-handle oleh AuthContext
 
-        } catch (error: any) {
-            // Pesan error sudah ditangani di sini
-            message.error(error.message || 'Login gagal, periksa kembali username dan password Anda.');
+        } catch (error: unknown) {
+            // Provide more specific error messages based on the error
+            const errorMessage = error instanceof Error ? error.message : 'Login gagal';
+            
+            if (errorMessage.includes('username') && errorMessage.includes('password')) {
+                message.error('Username dan password harus diisi');
+            } else if (errorMessage.includes('invalid') || errorMessage.includes('format')) {
+                message.error('Format input tidak valid');
+            } else if (errorMessage.includes('not found') || errorMessage.includes('incorrect') || errorMessage.includes('wrong')) {
+                message.error('Username atau password salah');
+            } else if (errorMessage.includes('inactive') || errorMessage.includes('disabled')) {
+                message.error('Akun Anda tidak aktif. Hubungi administrator.');
+            } else {
+                message.error('Login gagal. Periksa kembali username dan password Anda.');
+            }
         } finally {
             setLoading(false);
         }
@@ -63,6 +75,7 @@ export default function LoginPage() {
                     <Form.Item name="password" label="Password" rules={[{ required: true, message: 'Password tidak boleh kosong' }]}>
                         <Input.Password placeholder="Masukkan password Anda" size="large" />
                     </Form.Item>
+                    
                     <Form.Item>
                         <Button type="primary" htmlType="submit" loading={loading} block size="large">
                             Login

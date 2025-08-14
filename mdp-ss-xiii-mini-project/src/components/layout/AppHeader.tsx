@@ -1,17 +1,25 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Avatar, Dropdown, Layout, Space, Tag, Typography } from 'antd';
-import { UserOutlined, LogoutOutlined } from '@ant-design/icons';
+import { UserOutlined, LogoutOutlined, KeyOutlined } from '@ant-design/icons';
 import { useAuth } from '@/context/AuthContext';
+import ChangePasswordModal from '../ChangePasswordModal';
 
 const { Header } = Layout;
 const { Text } = Typography;
 
 const AppHeader = () => {
     const { user, role, logout } = useAuth();
+    const [changePasswordVisible, setChangePasswordVisible] = useState(false);
 
     const menuItems = [
+        {
+            key: 'change-password',
+            icon: <KeyOutlined />,
+            label: 'Ganti Password',
+            onClick: () => setChangePasswordVisible(true),
+        },
         {
             key: 'logout',
             icon: <LogoutOutlined />,
@@ -21,15 +29,27 @@ const AppHeader = () => {
     ];
 
     return (
-        <Header style={{ background: '#fff', padding: '0 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-            <Space>
-                <Text>Welcome, <strong>{user?.username}</strong></Text>
-                <Tag color="blue">{role?.name}</Tag>
-                <Dropdown menu={{ items: menuItems }} placement="bottomRight">
-                    <Avatar style={{ cursor: 'pointer' }} icon={<UserOutlined />} />
-                </Dropdown>
-            </Space>
-        </Header>
+        <>
+            <Header style={{ background: '#fff', padding: '0 24px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                <Space>
+                    <Text>Welcome, <strong>{user?.username}</strong></Text>
+                    <Tag color="blue">{role?.name}</Tag>
+                    <Dropdown menu={{ items: menuItems }} placement="bottomRight">
+                        <Avatar style={{ cursor: 'pointer' }} icon={<UserOutlined />} />
+                    </Dropdown>
+                </Space>
+            </Header>
+            
+            <ChangePasswordModal
+                visible={changePasswordVisible}
+                onCancel={() => setChangePasswordVisible(false)}
+                onSuccess={() => {
+                    setChangePasswordVisible(false);
+                    // Password change was successful, the modal already showed success message
+                    // The user can continue using the application with their new password
+                }}
+            />
+        </>
     );
 };
 export default AppHeader;

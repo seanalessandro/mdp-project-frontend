@@ -19,8 +19,8 @@ export interface LoginResponse {
 }
 
 export interface ChangePasswordRequest {
-  old_password: string;
-  new_password: string;
+  oldPassword: string;
+  newPassword: string;
 }
 
 export interface ApiError {
@@ -72,13 +72,16 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/change-password`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
-      body: JSON.stringify(passwordData),
+      body: JSON.stringify({
+        oldPassword: passwordData.oldPassword,
+        newPassword: passwordData.newPassword,
+      }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || 'Failed to change password');
+      throw new Error(data.error || data.message || 'Failed to change password');
     }
 
     return data;
