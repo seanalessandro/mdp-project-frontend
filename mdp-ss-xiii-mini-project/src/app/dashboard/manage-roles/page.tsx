@@ -89,7 +89,7 @@ export default function ManageRolesPage() {
 
   const columns = [
     {
-      title: 'Nama Peran',
+      title: 'Nama Role',
       dataIndex: 'name',
       key: 'name',
       sorter: (a: Role, b: Role) => a.name.localeCompare(b.name),
@@ -152,7 +152,7 @@ export default function ManageRolesPage() {
       <Row gutter={[24, 24]}>
         {/* Kolom Kiri - Form Tambah/Edit */}
         <Col xs={24} lg={8}>
-          <Card title={editingRole ? `Edit Peran: ${editingRole.name}` : "Tambah Peran Baru"} bordered={false}>
+          <Card title={editingRole ? `Edit Peran: ${editingRole.name}` : "Tambah Peran Role"} bordered={false}>
             <Form form={form} layout="vertical" onFinish={handleSubmit}>
               <Form.Item name="name" label="Nama Peran" rules={[{ required: true, message: 'Nama peran tidak boleh kosong' }]}>
                 <Input placeholder="Contoh: Marketing" />
@@ -191,10 +191,10 @@ export default function ManageRolesPage() {
 
         {/* Kolom Kanan - Tabel Daftar Peran */}
         <Col xs={24} lg={16}>
-          <Card title="Daftar Role" bordered={false}>
+          <Card title="Daftar Roles" bordered={false}>
             <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
               <Input.Search
-                placeholder="Cari peran..."
+                placeholder="Cari Roles..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
