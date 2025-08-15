@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Layout, Menu } from 'antd';
-import { DesktopOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
+import { DesktopOutlined, TeamOutlined, UserOutlined, FileTextOutlined  } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 
 const { Sider } = Layout;
@@ -10,6 +10,7 @@ const { Sider } = Layout;
 // --- PERBAIKI KEY DI SINI ---
 const menuItems = [
   { key: '/dashboard', icon: <DesktopOutlined />, label: 'Dashboard' },
+  { key: '/dashboard/documents', icon: <FileTextOutlined />, label: 'Documents' }, // <-- BARIS BARU
   { key: '/dashboard/manage-users', icon: <TeamOutlined />, label: 'Manage Users' },
   { key: '/dashboard/manage-roles', icon: <UserOutlined />, label: 'Master Role' },
 ];

@@ -4,6 +4,7 @@ import React from 'react';
 import { Layout } from 'antd';
 import AppSidebar from '../../components/layout/AppSidebar';
 import AppHeader from '../../components/layout/AppHeader';
+import '../editor.css';
 
 const { Content } = Layout;
 

@@ -66,3 +66,19 @@ export const createUser = (userData: AdminCreateUserRequest) => fetchApi('/admin
   method: 'POST',
   body: JSON.stringify(userData),
 });
+
+// Dokument Management
+// === Document Management Endpoints ===
+export const createDocument = (title: string) => fetchApi('/documents', {
+  method: 'POST',
+  body: JSON.stringify({ title }),
+});
+
+export const getDocument = (id: string) => fetchApi(`/documents/${id}`);
+
+export const updateDocument = (id: string, data: { title: string; content: string }) => fetchApi(`/documents/${id}`, {
+  method: 'PUT',
+  body: JSON.stringify(data),
+});
+export const getMyDocuments = () => fetchApi('/documents');
+

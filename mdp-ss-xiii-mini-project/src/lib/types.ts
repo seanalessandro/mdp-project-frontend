@@ -53,3 +53,8 @@ export interface AdminCreateUserRequest {
   password: string;
   roleId: string;
 }
+export interface Document extends BaseModel {
+  title: string;
+  content: string;
+  ownerId: string;
+}

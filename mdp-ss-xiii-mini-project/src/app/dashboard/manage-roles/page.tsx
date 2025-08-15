@@ -16,7 +16,7 @@ import {
   message,
   Select,
   Alert,
-  Switch // <-- Pastikan Switch di-import
+  Switch // <-- Make sure Switch is imported
 } from "antd";
 import { EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import useSWR from 'swr';
@@ -28,14 +28,14 @@ export default function ManageRolesPage() {
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Mengambil daftar role
+  // Fetching the list of roles
   const { data: roles, error: rolesError, mutate: mutateRoles, isLoading: isLoadingRoles } = useSWR('/admin/roles', api.getRoles);
 
-  // Mengambil daftar permission dari API untuk dropdown
+  // Fetching the list of permissions from the API for the dropdown
   const { data: allPermissions, error: permissionsError, isLoading: isLoadingPermissions } = useSWR('/admin/permissions', api.getPermissions);
 
   useEffect(() => {
-    // Mengisi form saat mode edit aktif
+    // Populate the form when edit mode is active
     if (editingRole) {
       form.setFieldsValue(editingRole);
     } else {
@@ -53,13 +53,13 @@ export default function ManageRolesPage() {
     try {
       if (editingRole) {
         await api.updateRole(editingRole.id, roleData);
-        message.success("Peran berhasil diupdate!");
+        message.success("Role updated successfully!");
       } else {
         await api.createRole(roleData);
-        message.success("Peran berhasil ditambahkan!");
+        message.success("Role added successfully!");
       }
-      mutateRoles(); // Memuat ulang data tabel
-      handleCancelEdit(); // Mengosongkan form
+      mutateRoles(); // Reload the table data
+      handleCancelEdit(); // Clear the form
     } catch (err: any) {
       message.error(err.message);
     }
@@ -68,7 +68,7 @@ export default function ManageRolesPage() {
   const handleDelete = async (roleId: string) => {
     try {
       await api.deleteRole(roleId);
-      message.success("Peran berhasil dihapus!");
+      message.success("Role deleted successfully!");
       mutateRoles();
     } catch (err: any) {
       message.error(err.message);
@@ -78,7 +78,7 @@ export default function ManageRolesPage() {
   const handleStatusChange = async (role: Role, checked: boolean) => {
     try {
       await api.updateRoleStatus(role.id, checked);
-      message.success(`Status peran ${role.name} berhasil diubah!`);
+      message.success(`Status for role ${role.name} changed successfully!`);
       mutateRoles();
     } catch (err: any) {
       message.error(err.message);
@@ -89,13 +89,13 @@ export default function ManageRolesPage() {
 
   const columns = [
     {
-      title: 'Nama Role',
+      title: 'Role Name',
       dataIndex: 'name',
       key: 'name',
       sorter: (a: Role, b: Role) => a.name.localeCompare(b.name),
     },
     {
-      title: 'Deskripsi',
+      title: 'Description',
       dataIndex: 'description',
       key: 'description',
     },
@@ -111,35 +111,35 @@ export default function ManageRolesPage() {
       key: 'isActive',
       render: (isActive: boolean, record: Role) => (
         <Switch
-          checkedChildren="Aktif"
-          unCheckedChildren="Nonaktif"
+          checkedChildren="Active"
+          unCheckedChildren="Inactive"
           checked={isActive}
           onChange={(checked) => handleStatusChange(record, checked)}
         />
       )
     },
     {
-      title: 'Aksi',
-      key: 'aksi',
+      title: 'Actions',
+      key: 'action', // 'aksi' changed to 'action' for convention
       render: (_: any, record: Role) => (
         <Space size="middle">
           <Button icon={<EditOutlined />} onClick={() => setEditingRole(record)}>Edit</Button>
           <Popconfirm
-            title="Hapus Peran"
-            description="Apakah Anda yakin ingin menghapus peran ini secara permanen?"
+            title="Delete Role"
+            description="Are you sure you want to permanently delete this role?"
             onConfirm={() => handleDelete(record.id)}
-            okText="Ya, Hapus"
-            cancelText="Tidak"
+            okText="Yes, Delete"
+            cancelText="No"
             disabled={record.isDefault}
           >
-            <Button icon={<DeleteOutlined />} danger disabled={record.isDefault}>Hapus</Button>
+            <Button icon={<DeleteOutlined />} danger disabled={record.isDefault}>Delete</Button>
           </Popconfirm>
         </Space>
       ),
     },
   ];
 
-  if (rolesError || permissionsError) return <Alert message="Error" description="Gagal memuat data." type="error" showIcon />;
+  if (rolesError || permissionsError) return <Alert message="Error" description="Failed to load data." type="error" showIcon />;
 
   const filteredRoles = roles?.filter((role: Role) =>
     role.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -147,18 +147,18 @@ export default function ManageRolesPage() {
 
   return (
     <Space direction="vertical" size="large" style={{ display: 'flex' }}>
-      <Typography.Title level={2}>Panel Manajemen Role</Typography.Title>
+      <Typography.Title level={2}>Role Management Panel</Typography.Title>
 
       <Row gutter={[24, 24]}>
-        {/* Kolom Kiri - Form Tambah/Edit */}
+        {/* Left Column - Add/Edit Form */}
         <Col xs={24} lg={8}>
-          <Card title={editingRole ? `Edit Peran: ${editingRole.name}` : "Tambah Peran Role"} bordered={false}>
+          <Card title={editingRole ? `Edit Role: ${editingRole.name}` : "Add New Role"} bordered={false}>
             <Form form={form} layout="vertical" onFinish={handleSubmit}>
-              <Form.Item name="name" label="Nama Peran" rules={[{ required: true, message: 'Nama peran tidak boleh kosong' }]}>
-                <Input placeholder="Contoh: Marketing" />
+              <Form.Item name="name" label="Role Name" rules={[{ required: true, message: 'Role name cannot be empty' }]}>
+                <Input placeholder="Example: Marketing" />
               </Form.Item>
-              <Form.Item name="description" label="Deskripsi">
-                <Input.TextArea rows={3} placeholder="Penjelasan singkat" />
+              <Form.Item name="description" label="Description">
+                <Input.TextArea rows={3} placeholder="Brief explanation" />
               </Form.Item>
 
               <Form.Item name="permissions" label="Permissions">
@@ -166,7 +166,7 @@ export default function ManageRolesPage() {
                   mode="multiple"
                   allowClear
                   style={{ width: '100%' }}
-                  placeholder="Pilih permissions"
+                  placeholder="Select permissions"
                   loading={isLoadingPermissions}
                 >
                   {(allPermissions || []).map((permission: string) => (
@@ -180,21 +180,21 @@ export default function ManageRolesPage() {
               <Form.Item>
                 <Space>
                   <Button type="primary" htmlType="submit">
-                    {editingRole ? "Update Peran" : "Simpan Peran"}
+                    {editingRole ? "Update Role" : "Save Role"}
                   </Button>
-                  {editingRole && <Button onClick={handleCancelEdit}>Batal</Button>}
+                  {editingRole && <Button onClick={handleCancelEdit}>Cancel</Button>}
                 </Space>
               </Form.Item>
             </Form>
           </Card>
         </Col>
 
-        {/* Kolom Kanan - Tabel Daftar Peran */}
+        {/* Right Column - Roles List Table */}
         <Col xs={24} lg={16}>
-          <Card title="Daftar Roles" bordered={false}>
+          <Card title="List of Roles" bordered={false}>
             <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
               <Input.Search
-                placeholder="Cari Roles..."
+                placeholder="Search Roles..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
