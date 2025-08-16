@@ -1,0 +1,70 @@
+/* src/app/dashboard/documents/[id]/editor-scoped.css */
+
+/*
+  PERBAIKAN: Semua gaya global (body, html, dll.) sudah dihapus.
+  Semua gaya sekarang berada di dalam '.tiptap-editor-container'.
+*/
+
+.tiptap-editor-container {
+    /* Variabel untuk Light Mode (Default) */
+    --tt-theme-text: #1a1a1a;
+    --tt-bg-color: #ffffff;
+    --tt-toolbar-height: 44px;
+    --tt-scrollbar-color: #cccccc;
+
+    /* Gaya dasar untuk wadah editor */
+    color: var(--tt-theme-text);
+    background-color: var(--tt-bg-color);
+    height: 100%;
+    overflow-y: auto;
+    /* Izinkan scroll di dalam editor */
+}
+
+/* PERBAIKAN: Dark mode hanya aktif saat wadah ini punya kelas '.dark' */
+.tiptap-editor-container.dark {
+    /* Variabel untuk Dark Mode */
+    --tt-theme-text: #e0e0e0;
+    --tt-bg-color: #1a1a1a;
+    --tt-scrollbar-color: #555555;
+}
+
+/* Salin semua gaya lain dari file .scss asli Anda ke sini,
+  tapi pastikan setiap selector diawali dengan '.tiptap-editor-container'.
+  Contoh:
+*/
+
+.tiptap-editor-container .simple-editor-wrapper {
+    /* Hapus width/height 100vw/vh, biarkan wadah yang mengatur */
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.tiptap-editor-container .simple-editor-content {
+    max-width: 648px;
+    width: 100%;
+    margin: 0 auto;
+    flex: 1;
+}
+
+.tiptap-editor-container .ProseMirror {
+    font-family: "DM Sans", sans-serif;
+    color: var(--tt-theme-text);
+    /* Gunakan variabel tema */
+    flex: 1;
+    padding: 3rem 3rem 30vh;
+}
+
+.tiptap-editor-container .ProseMirror:focus {
+    outline: none;
+}
+
+.tiptap-editor-container.dark .editor-header {
+  background-color: white; /* Pastikan background header tidak ikut gelap */
+}
+
+.tiptap-editor-container.dark .editor-header .ant-input {
+  color: whote; /* Kembalikan warna teks input ke default browser */
+}
+

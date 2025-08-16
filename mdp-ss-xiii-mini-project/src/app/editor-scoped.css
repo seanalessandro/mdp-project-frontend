@@ -1,0 +1,42 @@
+/* src/app/dashboard/documents/[id]/editor-scoped.css */
+
+/* PENTING: Gaya global untuk 'body', 'html', ':root' sudah dihapus.
+  Semua gaya sekarang diawali dengan .tiptap-editor-container
+  agar tidak bentrok dengan Ant Design.
+*/
+
+.tiptap-editor-container .relative {
+  position: relative;
+}
+
+.tiptap-editor-container .dark {
+  color-scheme: dark;
+}
+
+.tiptap-editor-container .ProseMirror {
+  min-height: 250px;
+  /* Atur tinggi minimal editor */
+}
+
+/* Anda bisa menambahkan atau memodifikasi gaya spesifik editor di sini */
+.tiptap-editor-container .ProseMirror:focus {
+  outline: none;
+}
+
+.tiptap-editor-container .ProseMirror p {
+  margin-bottom: 1rem;
+}
+
+.tiptap-editor-container .ProseMirror h1,
+.tiptap-editor-container .ProseMirror h2,
+.tiptap-editor-container .ProseMirror h3 {
+  margin-bottom: 1rem;
+}
+
+/* Salin-tempel (copy-paste) gaya lain dari file editor.css lama Anda ke sini,
+  TAPI JANGAN LUPA untuk menambahkan .tiptap-editor-container di depannya.
+  Contoh: 
+  
+  .toolbar { ... } menjadi .tiptap-editor-container .toolbar { ... }
+  .bubble-menu { ... } menjadi .tiptap-editor-container .bubble-menu { ... }
+*/

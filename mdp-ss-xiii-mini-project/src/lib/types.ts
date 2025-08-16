@@ -58,3 +58,8 @@ export interface Document extends BaseModel {
   content: string;
   ownerId: string;
 }
+export interface Comment extends BaseModel {
+  documentId: string;
+  content: string;
+  authorName: string;
+}

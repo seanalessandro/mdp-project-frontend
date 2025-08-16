@@ -6,10 +6,11 @@ import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import * as api from '@/lib/api';
-import { Document } from '@/lib/types'; // Pastikan tipe Document sudah ada di types.ts
+import { Document } from '@/lib/types';
 
 export default function DocumentsPage() {
     const router = useRouter();
+    // Gunakan SWR untuk fetch data, revalidasi otomatis, dll.
     const { data: documents, error, mutate, isLoading } = useSWR('/documents', api.getMyDocuments);
 
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -27,33 +28,30 @@ export default function DocumentsPage() {
             message.success("Dokumen baru berhasil dibuat!");
             setIsModalVisible(false);
             setNewTitle('');
+            // Arahkan ke halaman edit untuk dokumen yang baru dibuat
             router.push(`/dashboard/documents/${newDoc.id}`);
         } catch (err: any) {
-            message.error(err.message);
+            message.error(err.message || "Gagal membuat dokumen");
         } finally {
             setIsCreating(false);
         }
     };
 
+    const handleDelete = async (docId: string) => {
+        try {
+            await api.deleteDocument(docId);
+            message.success("Dokumen berhasil dihapus!");
+            // Mutate akan memicu SWR untuk fetch ulang data, sehingga UI terupdate
+            mutate();
+        } catch (err: any) {
+            message.error(err.message || "Gagal menghapus dokumen");
+        }
+    };
+
     const columns = [
-        {
-            title: 'Judul Dokumen',
-            dataIndex: 'title',
-            key: 'title',
-            sorter: (a: Document, b: Document) => a.title.localeCompare(b.title),
-        },
-        {
-            title: 'Dibuat Pada',
-            dataIndex: 'createdOn',
-            key: 'createdOn',
-            render: (date: string) => new Date(date).toLocaleDateString(),
-        },
-        {
-            title: 'Terakhir Diubah',
-            dataIndex: 'modifiedOn',
-            key: 'modifiedOn',
-            render: (date: string) => new Date(date).toLocaleString(),
-        },
+        { title: 'Judul Dokumen', dataIndex: 'title', key: 'title', sorter: (a: Document, b: Document) => a.title.localeCompare(b.title) },
+        { title: 'Dibuat Pada', dataIndex: 'createdOn', key: 'createdOn', render: (date: string) => new Date(date).toLocaleDateString() },
+        { title: 'Terakhir Diubah', dataIndex: 'modifiedOn', key: 'modifiedOn', render: (date: string) => new Date(date).toLocaleString() },
         {
             title: 'Aksi',
             key: 'action',
@@ -65,7 +63,7 @@ export default function DocumentsPage() {
                     <Popconfirm
                         title="Hapus Dokumen"
                         description="Apakah Anda yakin ingin menghapus dokumen ini?"
-                        // onConfirm={() => handleDelete(record.id)}
+                        onConfirm={() => handleDelete(record.id)}
                         okText="Ya, Hapus"
                         cancelText="Tidak"
                     >

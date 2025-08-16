@@ -49,16 +49,16 @@ export default function DashboardPage() {
   const getAdminDashboard = () => (
     <Row gutter={[16, 16]}>
       <Col xs={24} sm={12} lg={6}>
-        <Card bordered={false}><Statistic title="Total Users" value={150} prefix={<UserOutlined />} /></Card>
+        <Card variant="borderless"><Statistic title="Total Users" value={150} prefix={<UserOutlined />} /></Card>
       </Col>
       <Col xs={24} sm={12} lg={6}>
-        <Card bordered={false}><Statistic title="Active Sessions" value={42} prefix={<ClockCircleOutlined />} /></Card>
+        <Card variant="borderless"><Statistic title="Active Sessions" value={42} prefix={<ClockCircleOutlined />} /></Card>
       </Col>
       <Col xs={24} sm={12} lg={6}>
-        <Card bordered={false}><Statistic title="System Reports" value={28} prefix={<BarChartOutlined />} /></Card>
+        <Card variant="borderless"><Statistic title="System Reports" value={28} prefix={<BarChartOutlined />} /></Card>
       </Col>
       <Col xs={24} sm={12} lg={6}>
-        <Card bordered={false}><Statistic title="Configurations" value={12} prefix={<SettingOutlined />} /></Card>
+        <Card variant="borderless"><Statistic title="Configurations" value={12} prefix={<SettingOutlined />} /></Card>
       </Col>
       <Col xs={24}>
         <Card title="Quick Actions" className="mt-4">

@@ -5,7 +5,7 @@ import { AuthProvider } from '@/context/AuthContext';
 import './globals.css';
 
 const RootLayout = ({ children }: { children: React.ReactNode }) => (
-  <html lang="en">
+  <html lang="en" suppressHydrationWarning={true}>
     <body>
       <AntdRegistry>
         <AuthProvider>

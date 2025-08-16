@@ -41,7 +41,7 @@ export default function ChangePasswordModal({ visible, onCancel, onSuccess }: Ch
       onSuccess();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Gagal mengubah password';
-      
+
       // Provide more specific error messages
       if (errorMessage.includes('password lama') || errorMessage.includes('old password') || errorMessage.includes('incorrect')) {
         message.error('Password lama yang Anda masukkan salah. Silakan coba lagi.');
@@ -63,7 +63,7 @@ export default function ChangePasswordModal({ visible, onCancel, onSuccess }: Ch
       open={visible}
       onCancel={onCancel}
       footer={null}
-      destroyOnClose
+      destroyOnHidden // <-- Menjadi ini
     >
       <Form
         form={form}
@@ -96,9 +96,9 @@ export default function ChangePasswordModal({ visible, onCancel, onSuccess }: Ch
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
           <Button onClick={onCancel}>Batal</Button>
-          <Button 
-            type="primary" 
-            htmlType="submit" 
+          <Button
+            type="primary"
+            htmlType="submit"
             loading={loading}
           >
             Ganti Password

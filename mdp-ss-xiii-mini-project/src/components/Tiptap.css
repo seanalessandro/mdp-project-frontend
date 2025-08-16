@@ -1,0 +1,75 @@
+/* ============================================== */
+/* == KODE LENGKAP UNTUK FILE app/components/Tiptap.css == */
+/* ============================================== */
+
+/* 1. Styling Dasar Area Editor (.tiptap) */
+.tiptap {
+  border: 1px solid #d9d9d9;
+  padding: 1rem;
+  min-height: 200px;
+  border-radius: 0 0 6px 6px; /* Sudut melengkung di bawah */
+}
+
+.tiptap:focus {
+  outline: none; /* Kita biarkan Card Ant Design yang menangani focus outline */
+}
+
+/* 2. Styling Placeholder */
+.tiptap p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+
+/* ========================================================= */
+/* 3. STYLING MENU TOOLBAR (PILIH SALAH SATU DI BAWAH INI) */
+/* ========================================================= */
+
+
+/* --- OPSI A: Jika Anda pakai tombol <button> HTML biasa --- */
+.menu-bar {
+  display: flex;
+  flex-wrap: wrap; /* PENTING: Agar tidak overflow */
+  gap: 0.25rem;
+  padding: 0.5rem;
+  background-color: #ffffff;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px 6px 0 0;
+  border-bottom: none;
+}
+
+.menu-bar button {
+  padding: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background-color: transparent;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.menu-bar button:hover {
+  background-color: #f0f0f0;
+  border-color: #d9d9d9;
+}
+
+.menu-bar button.is-active {
+  background-color: #e6f7ff;
+  border-color: #91d5ff;
+  color: #1890ff;
+}
+
+
+/* --- OPSI B: Jika Anda pakai tombol <Button> dari Ant Design --- */
+.menu-bar-antd {
+  display: flex;
+  flex-wrap: wrap; /* PENTING: Agar tidak overflow */
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid #d9d9d9;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+}
