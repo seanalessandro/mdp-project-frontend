@@ -13,8 +13,24 @@ import { Highlight } from "@tiptap/extension-highlight"
 import { Subscript } from "@tiptap/extension-subscript"
 import { Superscript } from "@tiptap/extension-superscript"
 import { Selection } from "@tiptap/extensions"
+import { Table } from '@tiptap/extension-table'
+import { TableCell } from '@tiptap/extension-table-cell'
+import { TableHeader } from '@tiptap/extension-table-header'
+import { TableRow } from '@tiptap/extension-table-row'
 
-
+// --- Ant Design & Icons ---
+import { Dropdown, Tooltip, Space, Button as AntButton } from 'antd';
+import type { MenuProps } from 'antd';
+import {
+  TableOutlined,
+  InsertRowBelowOutlined,
+  InsertRowAboveOutlined,
+  InsertRowLeftOutlined,
+  InsertRowRightOutlined,
+  DeleteColumnOutlined,
+  DeleteRowOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons';
 
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button"
@@ -75,27 +91,56 @@ import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
 // --- Styles ---
 import "@/components/tiptap-templates/simple/simple-editor.scss"
 
-// -----------------------------------------------------------------------------
-// PERBAIKAN DIMULAI DI SINI
-// -----------------------------------------------------------------------------
 
-// 1. Definisikan tipe untuk props yang akan diterima komponen
 interface SimpleEditorProps {
   content: string;
   onUpdate: (editor: Editor) => void;
   headerContent?: React.ReactNode;
 }
 
-// Komponen Toolbar tidak perlu diubah, biarkan seperti aslinya
 const MainToolbarContent = ({
+  editor,
   onHighlighterClick,
   onLinkClick,
   isMobile,
 }: {
+  editor: Editor | null;
   onHighlighterClick: () => void
   onLinkClick: () => void
   isMobile: boolean
 }) => {
+  if (!editor) {
+    return null;
+  }
+
+  const tableMenuItems: MenuProps['items'] = [
+    {
+      key: 'rows', label: 'Row Actions', type: 'group',
+      children: [
+        { key: 'addRowBefore', icon: <InsertRowAboveOutlined />, label: 'Add Row Before', onClick: () => editor.chain().focus().addRowBefore().run(), disabled: !editor.can().addRowBefore() },
+        { key: 'addRowAfter', icon: <InsertRowBelowOutlined />, label: 'Add Row After', onClick: () => editor.chain().focus().addRowAfter().run(), disabled: !editor.can().addRowAfter() },
+        { key: 'deleteRow', icon: <DeleteRowOutlined />, label: 'Delete Row', onClick: () => editor.chain().focus().deleteRow().run(), disabled: !editor.can().deleteRow() },
+      ],
+    },
+    {
+      key: 'cols', label: 'Column Actions', type: 'group',
+      children: [
+        { key: 'addColBefore', icon: <InsertRowLeftOutlined />, label: 'Add Column Before', onClick: () => editor.chain().focus().addColumnBefore().run(), disabled: !editor.can().addColumnBefore() },
+        { key: 'addColAfter', icon: <InsertRowRightOutlined />, label: 'Add Column After', onClick: () => editor.chain().focus().addColumnAfter().run(), disabled: !editor.can().addColumnAfter() },
+        { key: 'deleteCol', icon: <DeleteColumnOutlined />, label: 'Delete Column', onClick: () => editor.chain().focus().deleteColumn().run(), disabled: !editor.can().deleteColumn() },
+      ],
+    },
+    { type: 'divider' },
+    {
+      key: 'deleteTable',
+      icon: <DeleteOutlined />,
+      label: 'Delete Table',
+      onClick: () => editor.chain().focus().deleteTable().run(),
+      danger: true,
+      disabled: !editor.can().deleteTable(),
+    },
+  ];
+
   return (
     <>
       <Spacer />
@@ -120,11 +165,7 @@ const MainToolbarContent = ({
         <MarkButton type="strike" />
         <MarkButton type="code" />
         <MarkButton type="underline" />
-        {!isMobile ? (
-          <ColorHighlightPopover />
-        ) : (
-          <ColorHighlightPopoverButton onClick={onHighlighterClick} />
-        )}
+        {!isMobile ? (<ColorHighlightPopover />) : (<ColorHighlightPopoverButton onClick={onHighlighterClick} />)}
         {!isMobile ? <LinkPopover /> : <LinkButton onClick={onLinkClick} />}
       </ToolbarGroup>
       <ToolbarSeparator />
@@ -143,6 +184,26 @@ const MainToolbarContent = ({
       <ToolbarGroup>
         <ImageUploadButton text="Add" />
       </ToolbarGroup>
+      <ToolbarSeparator />
+      <ToolbarGroup>
+        <Space className="editor-toolbar-space">
+          <Tooltip title="Insert Table">
+            <AntButton
+              icon={<TableOutlined />}
+              onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+            />
+          </Tooltip>
+          {editor.isActive('table') && (
+            <Dropdown menu={{ items: tableMenuItems }} trigger={['click']}>
+              <AntButton>
+                <Space>
+                  Table Actions
+                </Space>
+              </AntButton>
+            </Dropdown>
+          )}
+        </Space>
+      </ToolbarGroup>
       <Spacer />
       {isMobile && <ToolbarSeparator />}
       <ToolbarGroup>
@@ -152,41 +213,23 @@ const MainToolbarContent = ({
   )
 }
 
-const MobileToolbarContent = ({
-  type,
-  onBack,
-}: {
-  type: "highlighter" | "link"
-  onBack: () => void
-}) => (
+const MobileToolbarContent = ({ type, onBack }: { type: "highlighter" | "link"; onBack: () => void }) => (
   <>
     <ToolbarGroup>
       <Button data-style="ghost" onClick={onBack}>
         <ArrowLeftIcon className="tiptap-button-icon" />
-        {type === "highlighter" ? (
-          <HighlighterIcon className="tiptap-button-icon" />
-        ) : (
-          <LinkIcon className="tiptap-button-icon" />
-        )}
+        {type === "highlighter" ? (<HighlighterIcon className="tiptap-button-icon" />) : (<LinkIcon className="tiptap-button-icon" />)}
       </Button>
     </ToolbarGroup>
     <ToolbarSeparator />
-    {type === "highlighter" ? (
-      <ColorHighlightPopoverContent />
-    ) : (
-      <LinkContent />
-    )}
+    {type === "highlighter" ? (<ColorHighlightPopoverContent />) : (<LinkContent />)}
   </>
 )
 
-
-// 2. Ubah fungsi utama untuk menerima props
 export function SimpleEditor({ content, onUpdate, headerContent }: SimpleEditorProps) {
   const isMobile = useIsMobile()
   const { height } = useWindowSize()
-  const [mobileView, setMobileView] = React.useState<
-    "main" | "highlighter" | "link"
-  >("main")
+  const [mobileView, setMobileView] = React.useState<"main" | "highlighter" | "link">("main")
   const toolbarRef = React.useRef<HTMLDivElement>(null)
 
   const editor = useEditor({
@@ -202,10 +245,7 @@ export function SimpleEditor({ content, onUpdate, headerContent }: SimpleEditorP
       },
     },
     extensions: [
-      StarterKit.configure({
-        horizontalRule: false,
-        link: { openOnClick: false, enableClickSelection: true },
-      }),
+      StarterKit.configure({ horizontalRule: false, link: { openOnClick: false, enableClickSelection: true }, }),
       HorizontalRule,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       TaskList,
@@ -223,39 +263,32 @@ export function SimpleEditor({ content, onUpdate, headerContent }: SimpleEditorP
         upload: handleImageUpload,
         onError: (error) => console.error("Upload failed:", error),
       }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
-    // 3. Gunakan props `onUpdate` yang dikirim dari luar
     onUpdate: ({ editor }) => {
       onUpdate(editor);
     },
-    // Mulai dengan konten kosong, akan diisi oleh useEffect di bawah
     content: '',
   })
 
-  // 4. Gunakan useEffect untuk menyinkronkan konten dari props ke dalam editor
   React.useEffect(() => {
     if (!editor || !content) {
       return;
     }
-
-    // Cek apakah kontennya berbeda sebelum melakukan update untuk menghindari loop tak terbatas
     const currentContentJSON = JSON.stringify(editor.getJSON());
     if (currentContentJSON !== content) {
       try {
         const parsedContent = JSON.parse(content);
-
-        // --- PERBAIKAN DI SINI ---
-        // Argumen kedua harus berupa objek, bukan boolean
         editor.commands.setContent(parsedContent, { emitUpdate: false });
-
       } catch (e) {
         console.error("Gagal mem-parsing konten JSON:", e);
-        // Jika gagal, tampilkan pesan error atau konten default
         editor.commands.setContent("<p>Gagal memuat konten.</p>", { emitUpdate: false });
       }
     }
   }, [content, editor]);
-
 
   const rect = useCursorVisibility({
     editor,
@@ -270,22 +303,15 @@ export function SimpleEditor({ content, onUpdate, headerContent }: SimpleEditorP
 
   return (
     <div className="simple-editor-wrapper">
-      {/* 5. Render `headerContent` yang dikirim dari luar */}
       {headerContent}
-
       <EditorContext.Provider value={{ editor }}>
         <Toolbar
           ref={toolbarRef}
-          style={{
-            ...(isMobile
-              ? {
-                bottom: `calc(100% - ${height - rect.y}px)`,
-              }
-              : {}),
-          }}
+          style={{ ...(isMobile ? { bottom: `calc(100% - ${height - rect.y}px)` } : {}), }}
         >
           {mobileView === "main" ? (
             <MainToolbarContent
+              editor={editor}
               onHighlighterClick={() => setMobileView("highlighter")}
               onLinkClick={() => setMobileView("link")}
               isMobile={isMobile}
@@ -297,7 +323,6 @@ export function SimpleEditor({ content, onUpdate, headerContent }: SimpleEditorP
             />
           )}
         </Toolbar>
-
         <EditorContent
           editor={editor}
           role="presentation"

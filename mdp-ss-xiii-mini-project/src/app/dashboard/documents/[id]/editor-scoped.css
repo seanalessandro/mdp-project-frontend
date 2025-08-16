@@ -6,26 +6,26 @@
 */
 
 .tiptap-editor-container {
-    /* Variabel untuk Light Mode (Default) */
-    --tt-theme-text: #1a1a1a;
-    --tt-bg-color: #ffffff;
-    --tt-toolbar-height: 44px;
-    --tt-scrollbar-color: #cccccc;
+  /* Variabel untuk Light Mode (Default) */
+  --tt-theme-text: #1a1a1a;
+  --tt-bg-color: #ffffff;
+  --tt-toolbar-height: 44px;
+  --tt-scrollbar-color: #cccccc;
 
-    /* Gaya dasar untuk wadah editor */
-    color: var(--tt-theme-text);
-    background-color: var(--tt-bg-color);
-    height: 100%;
-    overflow-y: auto;
-    /* Izinkan scroll di dalam editor */
+  /* Gaya dasar untuk wadah editor */
+  color: var(--tt-theme-text);
+  background-color: var(--tt-bg-color);
+  height: 100%;
+  overflow-y: auto;
+  /* Izinkan scroll di dalam editor */
 }
 
 /* PERBAIKAN: Dark mode hanya aktif saat wadah ini punya kelas '.dark' */
 .tiptap-editor-container.dark {
-    /* Variabel untuk Dark Mode */
-    --tt-theme-text: #e0e0e0;
-    --tt-bg-color: #1a1a1a;
-    --tt-scrollbar-color: #555555;
+  /* Variabel untuk Dark Mode */
+  --tt-theme-text: #e0e0e0;
+  --tt-bg-color: #1a1a1a;
+  --tt-scrollbar-color: #555555;
 }
 
 /* Salin semua gaya lain dari file .scss asli Anda ke sini,
@@ -34,37 +34,93 @@
 */
 
 .tiptap-editor-container .simple-editor-wrapper {
-    /* Hapus width/height 100vw/vh, biarkan wadah yang mengatur */
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+  /* Hapus width/height 100vw/vh, biarkan wadah yang mengatur */
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .tiptap-editor-container .simple-editor-content {
-    max-width: 648px;
-    width: 100%;
-    margin: 0 auto;
-    flex: 1;
+  max-width: 648px;
+  width: 100%;
+  margin: 0 auto;
+  flex: 1;
 }
 
 .tiptap-editor-container .ProseMirror {
-    font-family: "DM Sans", sans-serif;
-    color: var(--tt-theme-text);
-    /* Gunakan variabel tema */
-    flex: 1;
-    padding: 3rem 3rem 30vh;
+  font-family: "DM Sans", sans-serif;
+  color: var(--tt-theme-text);
+  /* Gunakan variabel tema */
+  flex: 1;
+  padding: 3rem 3rem 30vh;
 }
 
 .tiptap-editor-container .ProseMirror:focus {
-    outline: none;
+  outline: none;
 }
 
 .tiptap-editor-container.dark .editor-header {
-  background-color: white; /* Pastikan background header tidak ikut gelap */
+  background-color: white;
+  /* Pastikan background header tidak ikut gelap */
 }
 
 .tiptap-editor-container.dark .editor-header .ant-input {
-  color: whote; /* Kembalikan warna teks input ke default browser */
+  color: whote;
+  /* Kembalikan warna teks input ke default browser */
 }
 
+
+
+.tiptap-editor-container .ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 2rem 0;
+  table-layout: fixed;
+}
+
+.tiptap-editor-container .ProseMirror td,
+.tiptap-editor-container .ProseMirror th {
+  min-width: 1em;
+  border: 1px solid #DDD;
+  /* <-- Ini yang membuat border terlihat */
+  padding: 10px 12px;
+  vertical-align: top;
+  position: relative;
+  text-align: left;
+}
+
+.tiptap-editor-container .ProseMirror th {
+  font-weight: bold;
+  background-color: #f2f2f2;
+  /* Warna latar untuk header di light mode */
+}
+
+.tiptap-editor-container .ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: #adf;
+  pointer-events: none;
+}
+
+.tiptap-editor-container.dark .ProseMirror td,
+.tiptap-editor-container.dark .ProseMirror th {
+  border-color: #555;
+  /* Warna border di dark mode */
+}
+
+.tiptap-editor-container.dark .ProseMirror th {
+  background-color: #2c2c2c;
+  /* Warna latar header di dark mode */
+}
+
+.tiptap-editor-container .editor-toolbar-space .ant-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  /* Sedikit lebih ramping */
+} 
