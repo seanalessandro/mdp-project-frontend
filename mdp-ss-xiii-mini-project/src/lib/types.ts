@@ -63,3 +63,8 @@ export interface Comment extends BaseModel {
   content: string;
   authorName: string;
 }
+export interface CreateCommentPayload {
+  content: string;
+  markedText?: string; // Opsional, hanya untuk komentar utama yang sederhana
+  parentId?: string;   // Opsional, hanya untuk balasan
+}

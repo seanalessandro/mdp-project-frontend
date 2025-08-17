@@ -1,6 +1,7 @@
 import { LoginRequest, RoleRequest, AdminCreateUserRequest } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3033/api';
+import { CreateCommentPayload } from './types';
 
 // --- FUNGSI INI YANG DIPERBAIKI ---
 async function fetchApi(endpoint: string, options: RequestInit = {}) {
@@ -111,7 +112,7 @@ export const uploadImage = (file: File) => {
 
 
 export const getComments = (docId: string) => fetchApi(`/documents/${docId}/comments`);
-export const createComment = (docId: string, data: { content: string; markedText: string }) =>
+export const createComment = (docId: string, data: CreateCommentPayload) =>
   fetchApi(`/documents/${docId}/comments`, {
     method: 'POST',
     body: JSON.stringify(data),
