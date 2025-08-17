@@ -96,7 +96,10 @@ export const getMyDocuments = () => fetchApi('/documents');
 export const deleteDocument = (id: string) => fetchApi(`/documents/${id}`, {
   method: 'DELETE',
 });
-
+export const updateDocumentStatus = (id: string, status: string) => fetchApi(`/documents/${id}/status`, {
+  method: 'PATCH',
+  body: JSON.stringify({ status }),
+});
 
 // --- FUNGSI INI JUGA DISESUAIKAN ---
 export const uploadImage = (file: File) => {
