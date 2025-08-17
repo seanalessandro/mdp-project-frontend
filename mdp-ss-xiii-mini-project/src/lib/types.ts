@@ -57,6 +57,10 @@ export interface Document extends BaseModel {
   title: string;
   content: string;
   ownerId: string;
+  status: string;
+  docNo: string;
+  version: string;
+  priority: 'High' | 'Medium' | 'Low';
 }
 export interface Comment extends BaseModel {
   documentId: string;
@@ -67,4 +71,10 @@ export interface CreateCommentPayload {
   content: string;
   markedText?: string; // Opsional, hanya untuk komentar utama yang sederhana
   parentId?: string;   // Opsional, hanya untuk balasan
+}
+
+export interface CreateDocumentPayload {
+  title: string;
+  docNo: string;
+  priority: string;
 }

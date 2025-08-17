@@ -1,7 +1,7 @@
 import { LoginRequest, RoleRequest, AdminCreateUserRequest } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3033/api';
-import { CreateCommentPayload } from './types';
+import { CreateCommentPayload, CreateDocumentPayload } from './types';
 
 // --- FUNGSI INI YANG DIPERBAIKI ---
 async function fetchApi(endpoint: string, options: RequestInit = {}) {
@@ -83,15 +83,16 @@ export const createUser = (userData: AdminCreateUserRequest) => fetchApi('/admin
 });
 
 // === Document Management Endpoints ===
-export const createDocument = (title: string) => fetchApi('/documents', {
+export const createDocument = (data: CreateDocumentPayload) => fetchApi('/documents', {
   method: 'POST',
-  body: JSON.stringify({ title }),
+  body: JSON.stringify(data),
 });
 export const getDocument = (id: string) => fetchApi(`/documents/${id}`);
-export const updateDocument = (id: string, data: { title: string; content: string }) => fetchApi(`/documents/${id}`, {
+export const updateDocument = (id: string, data: { title: string; content: string; docNo: string }) => fetchApi(`/documents/${id}`, {
   method: 'PUT',
   body: JSON.stringify(data),
 });
+
 export const getMyDocuments = () => fetchApi('/documents');
 export const deleteDocument = (id: string) => fetchApi(`/documents/${id}`, {
   method: 'DELETE',

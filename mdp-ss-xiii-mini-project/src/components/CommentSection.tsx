@@ -79,7 +79,7 @@ const CommentNode = ({ comment, docId }: { comment: any; docId: string }) => {
                 <Input.TextArea rows={2} placeholder={`Replying to ${authorDisplayName}...`} />
             </Form.Item>
             <Form.Item>
-                <Button htmlType="submit" size="small" type="primary">Post Reply</Button>
+                <Button htmlType="submit" size="medium" type="primary">Post Reply</Button>
             </Form.Item>
         </Form>
     );
@@ -157,7 +157,7 @@ export default function CommentSection({ docId }: { docId: string }) {
                             <Input.TextArea rows={4} placeholder="Write a comment..." />
                         </Form.Item>
                         <Form.Item>
-                            <Button htmlType="submit" type="primary">Post Comment</Button>
+                            <Button size='large'  htmlType="submit" type="primary">Post Comment</Button>
                         </Form.Item>
                     </Form>
                 </div>
