@@ -111,7 +111,14 @@ export const uploadImage = (file: File) => {
 
 
 export const getComments = (docId: string) => fetchApi(`/documents/${docId}/comments`);
-export const createComment = (docId: string, content: string) => fetchApi(`/documents/${docId}/comments`, {
-  method: 'POST',
-  body: JSON.stringify({ content }),
-});
+export const createComment = (docId: string, data: { content: string; markedText: string }) =>
+  fetchApi(`/documents/${docId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+export const createReply = (commentId: string, content: string) =>
+  fetchApi(`/comments/${commentId}/replies`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  });
