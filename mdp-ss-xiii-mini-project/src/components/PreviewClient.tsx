@@ -34,7 +34,6 @@ export default function PreviewClient({ documentData, docId }: { documentData: a
     const editor = useEditor({
         editable: false,
         content: '',
-        // --- INI KUNCINYA: Pastikan baris ini selalu ada ---
         immediatelyRender: false,
         extensions: [
             StarterKit,

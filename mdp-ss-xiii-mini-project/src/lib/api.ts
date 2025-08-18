@@ -88,7 +88,8 @@ export const createDocument = (data: CreateDocumentPayload) => fetchApi('/docume
   body: JSON.stringify(data),
 });
 export const getDocument = (id: string) => fetchApi(`/documents/${id}`);
-export const updateDocument = (id: string, data: { title: string; content: string; docNo: string }) => fetchApi(`/documents/${id}`, {
+
+export const updateDocument = (id: string, data: { title: string; content: string; docNo: string; priority: string; }) => fetchApi(`/documents/${id}`, {
   method: 'PUT',
   body: JSON.stringify(data),
 });
@@ -101,6 +102,9 @@ export const updateDocumentStatus = (id: string, status: string) => fetchApi(`/d
   method: 'PATCH',
   body: JSON.stringify({ status }),
 });
+
+export const getTemplates = () => fetchApi('/templates');
+
 
 // --- FUNGSI INI JUGA DISESUAIKAN ---
 export const uploadImage = (file: File) => {

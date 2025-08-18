@@ -78,3 +78,9 @@ export interface CreateDocumentPayload {
   docNo: string;
   priority: string;
 }
+export interface DocumentTemplate {
+  id: string;
+  name: string;
+  description: string;
+  content: string;
+}
