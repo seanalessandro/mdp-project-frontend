@@ -38,7 +38,7 @@ export default function DocumentsPage() {
             form.resetFields();
             setSelectedContent('');
 
-            router.push(`/dashboard/documents/preview/${newDoc.id}`);
+            router.push(`/dashboard/documents/${newDoc.id}`);
         } catch (err: any) {
             message.error(err.message || "Gagal membuat dokumen");
         } finally {
