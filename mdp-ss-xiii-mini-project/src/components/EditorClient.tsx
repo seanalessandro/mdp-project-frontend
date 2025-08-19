@@ -94,8 +94,21 @@ export default function EditorClient({ documentData, docId }: { documentData: an
             .finally(() => setIsSaving(false));
     };
 
-    const handleSetStatus = async (newStatus: string) => { /* ... (fungsi ini tidak berubah) ... */ };
-
+    const handleSetStatus = async (newStatus: string) => {
+        // Simpan dulu semua perubahan yang belum tersimpan
+        handleManualSave();
+        try {
+            // Panggil API untuk update status
+            await api.updateDocumentStatus(docId, newStatus);
+            // Update state lokal agar UI langsung berubah
+            setStatus(newStatus);
+            message.success(`Document marked as "${newStatus}"`);
+            // Memicu refresh data di halaman detail dan daftar
+            globalMutate(`/documents/${docId}`);
+        } catch (err) {
+            message.error("Failed to update status.");
+        }
+    };
     return (
         <div style={{ margin: -24, background: 'transparent' }}>
             <Content>
@@ -135,7 +148,7 @@ export default function EditorClient({ documentData, docId }: { documentData: an
                         }
                     />
                 </div>
-                <CommentSection docId={docId} />
+                {/* <CommentSection docId={docId} /> */}
             </Content>
         </div>
     );
