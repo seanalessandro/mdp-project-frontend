@@ -179,7 +179,7 @@ export default function DocumentsPage() {
                 onOk={() => form.submit()}
                 onCancel={() => setIsModalVisible(false)}
                 confirmLoading={isCreating}
-                destroyOnClose
+                destroyOnHidden
             >
                 <Form form={form} onFinish={handleCreateDocument} layout="vertical">
                     <Form.Item name="template" label="Pilih Template" initialValue="">

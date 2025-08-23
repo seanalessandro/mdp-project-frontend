@@ -72,16 +72,13 @@ class ApiService {
     const response = await fetch(`${API_BASE_URL}/change-password`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
-      body: JSON.stringify({
-        oldPassword: passwordData.oldPassword,
-        newPassword: passwordData.newPassword,
-      }),
+      body: JSON.stringify(passwordData),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || data.message || 'Failed to change password');
+      throw new Error(data.error || 'Failed to change password');
     }
 
     return data;

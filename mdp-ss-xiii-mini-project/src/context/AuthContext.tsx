@@ -38,13 +38,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (credentials: LoginRequest) => {
-    const response = await api.loginUser(credentials);
-    setUser(response.user);
-    setRole(response.role);
-    localStorage.setItem('user', JSON.stringify(response.user));
-    localStorage.setItem('role', JSON.stringify(response.role));
-    localStorage.setItem('token', response.token);
-    router.push('/dashboard');
+    console.log('AuthContext login called with:', credentials);
+    try {
+      const response = await api.loginUser(credentials);
+      console.log('Login response:', response);
+      setUser(response.user);
+      setRole(response.role);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem('role', JSON.stringify(response.role));
+      localStorage.setItem('token', response.token);
+      router.push('/dashboard');
+    } catch (error) {
+      console.log('AuthContext login error:', error);
+      throw error; // Re-throw the error so it can be caught by the login page
+    }
   };
 
   const logout = async () => {

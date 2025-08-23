@@ -1,17 +1,21 @@
 "use client";
 
 import React, { useState } from "react";
-import { Form, Input, Button, Spin, message, Divider } from "antd"; // Pastikan 'message' sudah di-import
+import { Form, Input, Button, Spin, message, Divider, Alert } from "antd"; // Added Alert
 import { GoogleOutlined } from '@ant-design/icons';
 import { useAuth } from "@/context/AuthContext";
 import PaperIcon from "@/components/PaperIcon";
+
 export default function LoginPage() {
     const [loading, setLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string>(''); // State for error message
     const { login } = useAuth();
     const [form] = Form.useForm();
 
     const handleLogin = async (values: { username: string; password: string }) => {
         setLoading(true);
+        setErrorMessage(''); // Clear previous error
+        
         try {
             // Panggil fungsi login dari context
             await login(values);
@@ -24,17 +28,29 @@ export default function LoginPage() {
             // Provide more specific error messages based on the error
             const errorMessage = error instanceof Error ? error.message : 'Login gagal';
             
-            if (errorMessage.includes('username') && errorMessage.includes('password')) {
-                message.error('Username dan password harus diisi');
-            } else if (errorMessage.includes('invalid') || errorMessage.includes('format')) {
-                message.error('Format input tidak valid');
-            } else if (errorMessage.includes('not found') || errorMessage.includes('incorrect') || errorMessage.includes('wrong')) {
-                message.error('Username atau password salah');
+            let displayMessage = '';
+            
+            if (errorMessage.includes('incorrect') || errorMessage.includes('wrong') || errorMessage.includes('not found')) {
+                displayMessage = 'Username atau password salah';
+            } else if (errorMessage.includes('invalid') && errorMessage.includes('format')) {
+                displayMessage = 'Format input tidak valid';
             } else if (errorMessage.includes('inactive') || errorMessage.includes('disabled')) {
-                message.error('Akun Anda tidak aktif. Hubungi administrator.');
+                displayMessage = 'Akun Anda tidak aktif. Hubungi administrator.';
+            } else if (errorMessage.includes('required') || errorMessage.includes('empty')) {
+                displayMessage = 'Username dan password harus diisi';
             } else {
-                message.error('Login gagal. Periksa kembali username dan password Anda.');
+                displayMessage = 'Login gagal. Periksa kembali username dan password Anda.';
             }
+            
+            // Set error message for display
+            setErrorMessage(displayMessage);
+            
+            // Also show message popup
+            message.destroy(); // Clear any existing messages first
+            message.error({
+                content: displayMessage,
+                duration: 3,
+            });
         } finally {
             setLoading(false);
         }
@@ -70,11 +86,35 @@ export default function LoginPage() {
 
                 <Form form={form} onFinish={handleLogin} layout="vertical">
                     <Form.Item name="username" label="Username" rules={[{ required: true, message: 'Username tidak boleh kosong' }]}>
-                        <Input placeholder="Masukkan username Anda" size="large" />
+                        <Input 
+                            placeholder="Masukkan username Anda" 
+                            size="large" 
+                            onChange={() => setErrorMessage('')} // Clear error when user types
+                        />
                     </Form.Item>
                     <Form.Item name="password" label="Password" rules={[{ required: true, message: 'Password tidak boleh kosong' }]}>
-                        <Input.Password placeholder="Masukkan password Anda" size="large" />
+                        <Input.Password 
+                            placeholder="Masukkan password Anda" 
+                            size="large" 
+                            onChange={() => setErrorMessage('')} // Clear error when user types
+                        />
                     </Form.Item>
+                    
+                    {/* Error message display */}
+                    {errorMessage && (
+                        <div style={{ 
+                            marginBottom: '16px',
+                            padding: '8px 12px',
+                            backgroundColor: '#fff2f0',
+                            border: '1px solid #ffccc7',
+                            borderRadius: '6px',
+                            color: '#cf1322',
+                            fontSize: '14px',
+                            textAlign: 'center'
+                        }}>
+                            {errorMessage}
+                        </div>
+                    )}
                     
                     <Form.Item>
                         <Button type="primary" htmlType="submit" loading={loading} block size="large">
