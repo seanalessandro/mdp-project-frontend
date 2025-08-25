@@ -59,7 +59,7 @@ export interface Document extends BaseModel {
   ownerId: string;
   status: string;
   docNo: string;
-  version: string;
+  version: number;
   priority: 'High' | 'Medium' | 'Low';
 }
 export interface Comment extends BaseModel {
@@ -83,4 +83,26 @@ export interface DocumentTemplate {
   name: string;
   description: string;
   content: string;
+}
+export interface DocumentTemplate extends BaseModel {
+  name: string;
+  description: string;
+  thumbnailUrl: string; // <-- Properti yang hilang
+  content: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  documentId?: string;
+  userId: string;
+  username: string;
+  action: string;
+  timestamp: string;
+}
+
+export interface DocumentVersion extends BaseModel {
+  documentId: string;
+  version: number;
+  content: string;
+  changeDescription: string;
 }

@@ -4,7 +4,7 @@
 @import '../styles/_variables.scss';
 @import '../styles/_keyframe-animations.scss';
 
-*{
+* {
   margin: 0;
   padding: 0;
 }
@@ -13,4 +13,33 @@
 
 body {
   font-family: 'Inter', sans-serif;
+}
+
+.template-preview-wrapper {
+  height: 200px;
+  /* Atur tinggi thumbnail */
+  overflow: hidden;
+  /* Sembunyikan konten yang berlebih */
+  border-bottom: 1px solid #f0f0f0;
+  transform: scale(0.9);
+  /* Sedikit zoom out agar terlihat seperti preview */
+  transform-origin: top left;
+  pointer-events: none;
+  /* Agar tidak bisa diklik/diedit */
+  background-color: white;
+}
+
+.template-preview-wrapper .ProseMirror {
+  font-size: 8px;
+  /* Perkecil ukuran font di dalam preview */
+  line-height: 1.2;
+}
+
+.template-preview-wrapper .ProseMirror p {
+  margin-bottom: 0.5em;
+}
+
+.template-preview-wrapper .ProseMirror h1 {
+  font-size: 14px;
+  margin-bottom: 0.5em;
 }

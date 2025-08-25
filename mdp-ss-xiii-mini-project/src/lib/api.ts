@@ -57,7 +57,7 @@ export const getUsers = (params?: { page?: number; limit?: number; search?: stri
   if (params?.search) queryParams.append('search', params.search);
   if (params?.role) queryParams.append('role', params.role);
   if (params?.status) queryParams.append('status', params.status);
-  
+
   const queryString = queryParams.toString();
   return fetchApi(`/admin/users${queryString ? `?${queryString}` : ''}`);
 };
@@ -125,10 +125,11 @@ export const updateRoleStatus = (id: string, isActive: boolean) => fetchApi(`/ad
 export const getPermissions = () => fetchApi('/admin/permissions');
 
 // === Document Management Endpoints ===
-export const createDocument = (data: CreateDocumentPayload) => fetchApi('/documents', {
+export const createDocument = (templateId: string) => fetchApi('/documents', {
   method: 'POST',
-  body: JSON.stringify(data),
+  body: JSON.stringify({ templateId }), // Hanya kirim templateId
 });
+
 export const getDocument = (id: string) => fetchApi(`/documents/${id}`);
 
 export const updateDocument = (id: string, data: { title: string; content: string; docNo: string; priority: string; }) => fetchApi(`/documents/${id}`, {
@@ -145,7 +146,15 @@ export const updateDocumentStatus = (id: string, status: string) => fetchApi(`/d
   body: JSON.stringify({ status }),
 });
 
+export const getDocumentHistory = (docId: string) => fetchApi(`/documents/${docId}/history`);
+export const getVersionHistory = (docId: string) => fetchApi(`/documents/${docId}/versions`);
+export const compareVersions = (fromId: string, toId: string) => {
+  return fetchApi(`/documents/versions/compare?from=${fromId}&to=${toId}`);
+};
+
 export const getTemplates = () => fetchApi('/templates');
+export const getDocumentTemplates = () => fetchApi('/document-templates');
+
 
 export const uploadImage = (file: File) => {
   const formData = new FormData();

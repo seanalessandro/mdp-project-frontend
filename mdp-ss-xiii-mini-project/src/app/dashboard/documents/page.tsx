@@ -1,61 +1,45 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { Button, Table, Space, Typography, Popconfirm, message, Modal, Input, Row, Form, Select, Tag, Tooltip, Col } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { Button, Table, Space, Typography, Popconfirm, message, Modal, Input, Row, Select, Tag, Tooltip, Col, Spin, Card } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import useSWR, { useSWRConfig } from 'swr';
+import useSWR from 'swr';
 import * as api from '@/lib/api';
 import { Document, DocumentTemplate } from '@/lib/types';
+import CreateDocumentModal from '@/components/documents/CreateDocumentModal';
 
 const { Option } = Select;
 
 export default function DocumentsPage() {
     const router = useRouter();
-    const { data: documents, error, mutate: mutateDocumentList, isLoading } = useSWR('/documents', api.getMyDocuments);
-    const { data: templates } = useSWR('/templates', api.getTemplates);
-    const { mutate } = useSWRConfig();
+    const { data: documents, error: docError, mutate: mutateDocuments, isLoading: isLoadingDocs } = useSWR('/documents', api.getMyDocuments);
 
-    const [isModalVisible, setIsModalVisible] = useState(false);
-    const [isCreating, setIsCreating] = useState(false);
-    const [form] = Form.useForm();
-    const [selectedContent, setSelectedContent] = useState('');
+    const [isTemplateModalVisible, setIsTemplateModalVisible] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
 
-    const handleCreateDocument = async (values: any) => {
-        setIsCreating(true);
+    const handleTemplateSelect = async (templateId: string) => {
+        setIsProcessing(true);
+        setIsTemplateModalVisible(false);
         try {
-            const payload = { ...values, content: selectedContent || undefined };
-            const newDoc = await api.createDocument(payload);
-
-            await mutate(`/documents/${newDoc.id}`, newDoc, { revalidate: false });
-
-            mutateDocumentList();
-
+            const newDoc = await api.createDocument(templateId);
             message.success("Dokumen baru berhasil dibuat!");
-            setIsModalVisible(false);
-            form.resetFields();
-            setSelectedContent('');
-
+            mutateDocuments();
             router.push(`/dashboard/documents/${newDoc.id}`);
         } catch (err: any) {
             message.error(err.message || "Gagal membuat dokumen");
         } finally {
-            setIsCreating(false);
+            setIsProcessing(false);
         }
-    };
-
-    const handleTemplateChange = (templateId: string) => {
-        const selectedTemplate = templates?.find((t: DocumentTemplate) => t.id === templateId);
-        setSelectedContent(selectedTemplate ? selectedTemplate.content : '');
     };
 
     const handleDelete = async (docId: string) => {
         try {
             await api.deleteDocument(docId);
             message.success("Dokumen berhasil dihapus!");
-            mutateDocumentList();
+            mutateDocuments();
         } catch (err: any) {
             message.error(err.message || "Gagal menghapus dokumen");
         }
@@ -63,15 +47,10 @@ export default function DocumentsPage() {
 
     const filteredDocuments = useMemo(() => {
         if (!documents) return [];
-
-        return documents.filter((doc: Document) => {
-            const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                doc.docNo.toLowerCase().includes(searchTerm.toLowerCase());
-
-            const matchesFilter = statusFilter === 'All' || doc.status === statusFilter;
-
-            return matchesSearch && matchesFilter;
-        });
+        return documents.filter((doc: Document) =>
+            (doc.title.toLowerCase().includes(searchTerm.toLowerCase()) || doc.docNo.toLowerCase().includes(searchTerm.toLowerCase())) &&
+            (statusFilter === 'All' || doc.status === statusFilter)
+        );
     }, [documents, searchTerm, statusFilter]);
 
     const columns = [
@@ -81,38 +60,44 @@ export default function DocumentsPage() {
             key: 'docNo',
             sorter: (a: Document, b: Document) => a.docNo.localeCompare(b.docNo)
         },
-        { title: 'JUDUL', dataIndex: 'title', key: 'title' },
-        { title: 'STATUS', dataIndex: 'status', key: 'status', render: (status: string) => <Tag style={{ borderRadius: '16px', padding: '4px 24px' }} color={status === 'In Review' ? 'blue' : 'default'}>{status}</Tag> },
+        {
+            title: 'JUDUL',
+            dataIndex: 'title',
+            key: 'title'
+        },
+        {
+            title: 'STATUS',
+            dataIndex: 'status',
+            key: 'status',
+            render: (status: string) => {
+                let color = 'default';
+                if (status === 'In Review') color = 'blue';
+                if (status === 'Approved') color = 'yellow';
+                if (status === 'Implemented') color = 'green';
+                return <Tag color={color}>{status}</Tag>;
+            }
+        },
         {
             title: 'PRIORITAS',
             dataIndex: 'priority',
             key: 'priority',
             render: (priority: string) => {
-                const color = priority === 'High' ? 'red' : priority === 'Medium' ? 'orange' : 'cyan';
-                return <Tag  style={{ borderRadius: '16px', padding: '4px 24px' }} color={color}>{priority.toUpperCase()}</Tag>;
+                const color = priority === 'High' ? 'red' : priority === 'Medium' ? 'orange' : 'green';
+                return <Tag color={color}>{priority}</Tag>;
             }
         },
-        { title: 'VERSI', dataIndex: 'version', key: 'version' },
+        {
+            title: 'VERSI',
+            dataIndex: 'version',
+            key: 'version',
+            render: (version: number) => version ? version.toFixed(1) : '1.0'
+        },
         {
             title: 'AKSI',
             key: 'action',
             render: (_: any, record: Document) => (
                 <Space>
-                    <Tooltip title="Preview Document">
-                        <Button
-                            icon={<EyeOutlined />}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/dashboard/documents/preview/${record.id}`);
-                            }}
-                        />
-                    </Tooltip>
-                    <Tooltip title="Edit Document">
-                        <Button icon={<EditOutlined />} onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/dashboard/documents/${record.id}`);
-                        }} />
-                    </Tooltip>
+                    <Tooltip title="Edit Document"><Button icon={<EditOutlined />} onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/documents/${record.id}`); }} /></Tooltip>
                     <Popconfirm
                         title="Hapus Dokumen"
                         description="Apakah Anda yakin ingin menghapus dokumen ini?"
@@ -128,85 +113,59 @@ export default function DocumentsPage() {
         },
     ];
 
-    if (error) return <div>Gagal memuat dokumen.</div>;
+    if (docError) return <div>Gagal memuat dokumen.</div>;
 
     return (
         <Space direction="vertical" size="large" style={{ display: 'flex' }}>
             <Row justify="space-between" align="middle">
-                <Typography.Title level={2} style={{ margin: 0 }}>Dashboard Requirement</Typography.Title>
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalVisible(true)}>
+                <div>
+                    <Typography.Title level={2} style={{ margin: 0 }}>Dashboard Requirement</Typography.Title>
+                    <Typography.Text type="secondary">Anda login sebagai: 1st Layer Support. Membuat & Mengajukan Requirement</Typography.Text>
+                </div>
+                <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => setIsTemplateModalVisible(true)} loading={isProcessing}>
                     Buat Requirement
                 </Button>
             </Row>
 
             <Row justify="space-between" gutter={16}>
-                <Col span={18}>
+                <Col flex="auto">
                     <Input.Search
                         placeholder="Cari berdasarkan Judul atau ID..."
-                        onSearch={(value) => setSearchTerm(value)}
+                        size="large"
+                        onSearch={setSearchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         allowClear
                     />
                 </Col>
-                <Col span={6}>
-                    <Select
-                        defaultValue="All"
-                        style={{ width: '100%' }}
-                        onChange={(value) => setStatusFilter(value)}
-                    >
+                <Col flex="200px">
+                    <Select defaultValue="All" style={{ width: '100%' }} size="large" onChange={setStatusFilter}>
                         <Option value="All">All Status</Option>
                         <Option value="Draft">Draft</Option>
                         <Option value="In Review">In Review</Option>
                         <Option value="Approved">Approved</Option>
+                        <Option value="Implemented">Implemented</Option>
                     </Select>
                 </Col>
             </Row>
 
-            <Table
-                columns={columns}
-                dataSource={filteredDocuments}
-                loading={isLoading}
-                rowKey="id"
-                onRow={(record) => ({
-                    onClick: () => router.push(`/dashboard/documents/preview/${record.id}`),
-                    style: { cursor: 'pointer' }
-                })}
-            />
+            <Card bordered={false}>
+                <Table
+                    columns={columns}
+                    dataSource={filteredDocuments}
+                    loading={isLoadingDocs}
+                    rowKey="id"
+                    onRow={(record) => ({
+                        onClick: () => router.push(`/dashboard/documents/preview/${record.id}`),
+                        style: { cursor: 'pointer' }
+                    })}
+                />
+            </Card>
 
-            <Modal
-                title="Buat Requirement Baru"
-                open={isModalVisible}
-                onOk={() => form.submit()}
-                onCancel={() => setIsModalVisible(false)}
-                confirmLoading={isCreating}
-                destroyOnHidden
-            >
-                <Form form={form} onFinish={handleCreateDocument} layout="vertical">
-                    <Form.Item name="template" label="Pilih Template" initialValue="">
-                        <Select onChange={handleTemplateChange}>
-                            <Option value="">Mulai dengan Dokumen Kosong</Option>
-                            {templates?.map((template: DocumentTemplate) => (
-                                <Option key={template.id} value={template.id}>
-                                    {template.name}
-                                </Option>
-                            ))}
-                        </Select>
-                    </Form.Item>
-                    <Form.Item name="docNo" label="Document Number" rules={[{ required: true, message: 'Nomor dokumen wajib diisi!' }]}>
-                        <Input placeholder="Contoh: BRD-001" />
-                    </Form.Item>
-                    <Form.Item name="title" label="Judul Requirement" rules={[{ required: true, message: 'Judul wajib diisi!' }]}>
-                        <Input placeholder="Contoh: Implementasi Fitur SSO" />
-                    </Form.Item>
-                    <Form.Item name="priority" label="Prioritas" initialValue="Medium" rules={[{ required: true }]}>
-                        <Select>
-                            <Option value="High">High</Option>
-                            <Option value="Medium">Medium</Option>
-                            <Option value="Low">Low</Option>
-                        </Select>
-                    </Form.Item>
-                </Form>
-            </Modal>
+            <CreateDocumentModal
+                open={isTemplateModalVisible}
+                onCancel={() => setIsTemplateModalVisible(false)}
+                onSelect={handleTemplateSelect}
+            />
         </Space>
     );
 }
