@@ -4,6 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { User, Role, LoginRequest } from '@/lib/types';
+import { getRoleBasedRoute, hasRoleAccess } from '@/utils/roleRoutes';
 import * as api from '@/lib/api';
 import { Spin } from 'antd';
 
@@ -47,7 +48,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('user', JSON.stringify(response.user));
       localStorage.setItem('role', JSON.stringify(response.role));
       localStorage.setItem('token', response.token);
-      router.push('/dashboard');
+      
+      // FR-5.2.3.2: Sistem mengarahkan user ke halaman dashboard spesifik sesuai role
+      const targetRoute = getRoleBasedRoute(response.role);
+      console.log(`Redirecting ${response.role.name} to: ${targetRoute}`);
+      router.push(targetRoute);
     } catch (error) {
       console.log('AuthContext login error:', error);
       throw error; // Re-throw the error so it can be caught by the login page
@@ -71,14 +76,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (isLoading) return;
+    
     const isAuthPage = pathname.startsWith('/auth');
     const isAuthenticated = !!localStorage.getItem('token');
+    const storedRole = localStorage.getItem('role');
+    const currentRole = storedRole ? JSON.parse(storedRole) : null;
 
     if (!isAuthenticated && !isAuthPage) {
       router.push('/auth/login');
+      return;
     }
+    
     if (isAuthenticated && isAuthPage) {
-      router.push('/dashboard');
+      // Redirect authenticated users away from auth pages
+      const targetRoute = getRoleBasedRoute(currentRole);
+      router.push(targetRoute);
+      return;
+    }
+
+    // FR-5.2.3.1 & FR-5.2.3.2: Role-based access control
+    if (isAuthenticated && !isAuthPage && currentRole) {
+      const hasAccess = hasRoleAccess(currentRole, pathname);
+      if (!hasAccess) {
+        console.warn(`Access denied for role ${currentRole.name} to path ${pathname}`);
+        // Redirect to role-appropriate dashboard
+        const allowedRoute = getRoleBasedRoute(currentRole);
+        router.push(allowedRoute);
+      }
     }
   }, [isLoading, pathname, router]);
   

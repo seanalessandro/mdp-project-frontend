@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Button, Input, Spin, message, Space, Layout, Tag, Popconfirm, Select } from 'antd'; // Tambahkan Select
+import { Button, Input, Spin, message, Space, Layout, Tag, Popconfirm, Select, Dropdown } from 'antd'; // Added Dropdown
+import { DownloadOutlined, EyeOutlined, FilePdfOutlined } from '@ant-design/icons'; // Added icons
 import { useRouter } from 'next/navigation';
 import { useSWRConfig } from 'swr';
 import * as api from '@/lib/api';
@@ -105,8 +106,94 @@ export default function EditorClient({ documentData, docId }: { documentData: an
             message.success(`Document marked as "${newStatus}"`);
             // Memicu refresh data di halaman detail dan daftar
             globalMutate(`/documents/${docId}`);
-        } catch (err) {
+        } catch (error) {
             message.error("Failed to update status.");
+        }
+    };
+
+    // PDF Export Functions - FR-5.3.4
+    const handlePDFExport = async () => {
+        try {
+            message.loading('Generating PDF...', 0);
+            
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/documents/${docId}/export/pdf`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to export PDF');
+            }
+
+            // Get the PDF blob
+            const blob = await response.blob();
+            
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            
+            // Generate filename with timestamp
+            const timestamp = new Date().toISOString().slice(0, 10);
+            const sanitizedTitle = title.replace(/[^\w\s-]/g, '').slice(0, 50);
+            link.download = `${sanitizedTitle}_${timestamp}.pdf`;
+            
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+            message.destroy();
+            message.success('PDF downloaded successfully!');
+        } catch (error) {
+            message.destroy();
+            message.error('Failed to export PDF. Please try again.');
+            console.error('PDF Export Error:', error);
+        }
+    };
+
+    const handlePDFPreview = async () => {
+        try {
+            message.loading('Opening PDF preview...', 1);
+            
+            // Simply open the preview URL in a new tab
+            // The backend authentication middleware will handle the token validation
+            const previewUrl = `${process.env.NEXT_PUBLIC_API_URL}/documents/${docId}/preview/pdf`;
+            
+            // Create a temporary anchor to open the URL with Authorization header
+            const token = localStorage.getItem('token');
+            const a = document.createElement('a');
+            a.href = previewUrl;
+            a.target = '_blank';
+            a.style.display = 'none';
+            
+            // We'll use fetch to get the PDF and create an object URL
+            const response = await fetch(previewUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load PDF preview');
+            }
+
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            
+            window.open(blobUrl, '_blank');
+            
+            // Clean up the blob URL after a delay to allow the window to load
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+            
+        } catch (error) {
+            message.error('Failed to open PDF preview. Please try again.');
+            console.error('PDF Preview Error:', error);
         }
     };
     return (
@@ -136,6 +223,32 @@ export default function EditorClient({ documentData, docId }: { documentData: an
                                         <Option value="Medium">Medium</Option>
                                         <Option value="Low">Low</Option>
                                     </Select>
+                                    
+                                    {/* PDF Export Buttons - FR-5.3.4 */}
+                                    <Dropdown
+                                        menu={{
+                                            items: [
+                                                {
+                                                    key: 'preview',
+                                                    label: 'Preview PDF',
+                                                    icon: <EyeOutlined />,
+                                                    onClick: handlePDFPreview,
+                                                },
+                                                {
+                                                    key: 'download',
+                                                    label: 'Download PDF',
+                                                    icon: <DownloadOutlined />,
+                                                    onClick: handlePDFExport,
+                                                },
+                                            ],
+                                        }}
+                                        placement="bottomRight"
+                                    >
+                                        <Button icon={<FilePdfOutlined />}>
+                                            Export PDF
+                                        </Button>
+                                    </Dropdown>
+                                    
                                     {status === 'Draft' && (
                                         <Popconfirm title="Submit for Review" onConfirm={() => handleSetStatus('In Review')} okText="Yes, Submit" cancelText="No">
                                             <Button>Ready for Review</Button>
