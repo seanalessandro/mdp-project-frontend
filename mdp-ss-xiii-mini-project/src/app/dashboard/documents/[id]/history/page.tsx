@@ -42,7 +42,8 @@ export default function VersionHistoryPage() {
         setIsComparing(true);
         setIsModalVisible(true);
         try {
-            const result = await api.compareVersions(v1.id, v2.id);
+            // --- SERTAKAN docId DI SINI ---
+            const result = await api.compareVersions(docId, v1.id, v2.id);
             setDiffResult(result);
         } catch (err: any) {
             message.error(err.message || "Gagal membandingkan versi.");

@@ -65,7 +65,7 @@ export default function PreviewClient({ documentData, docId }: { documentData: a
 
     const handleSetStatus = async (newStatus: string) => {
         try {
-            // await api.updateDocumentStatus(docId, newStatus);
+            await api.updateDocumentStatus(docId, newStatus);
             setStatus(newStatus);
             message.success(`Dokumen ditandai sebagai "${newStatus}"`);
             mutate(`/documents/${docId}`);
