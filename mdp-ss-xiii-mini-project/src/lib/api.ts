@@ -149,7 +149,7 @@ export const updateDocumentStatus = (id: string, status: string) => fetchApi(`/d
 export const getDocumentHistory = (docId: string) => fetchApi(`/documents/${docId}/history`);
 export const getVersionHistory = (docId: string) => fetchApi(`/documents/${docId}/versions`);
 export const compareVersions = (docId: string, fromId: string, toId: string) => {
-  return fetchApi(`/documents/${docId}/versions/compare?from=${fromId}&to=${toId}`);
+    return fetchApi(`/documents/${docId}/versions/compare?from=${fromId}&to=${toId}`);
 };
 export const getTemplates = () => fetchApi('/templates');
 export const getDocumentTemplates = () => fetchApi('/document-templates');

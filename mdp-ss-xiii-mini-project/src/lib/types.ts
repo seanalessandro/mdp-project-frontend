@@ -99,10 +99,13 @@ export interface ActivityLog {
   action: string;
   timestamp: string;
 }
-
-export interface DocumentVersion extends BaseModel {
+export interface DocumentVersion {
+  id: string;
   documentId: string;
   version: number;
   content: string;
   changeDescription: string;
+  createdOn: string;
+  createdByUsername?: string;
+  createdBy?: string;
 }

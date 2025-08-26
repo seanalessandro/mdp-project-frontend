@@ -1,0 +1,30 @@
+/* src/styles/tiptap-base.scss */
+
+/* Gaya untuk tabel */
+.tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+  overflow: hidden;
+}
+
+.tiptap td, .tiptap th {
+  border: 1px solid #ccc;
+  padding: 0.5em 1em;
+  min-width: 1em;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.tiptap th {
+  font-weight: bold;
+  text-align: left;
+  background-color: #f0f0f0;
+}
+
+/* Gaya untuk highlight */
+mark {
+  background-color: #fce200;
+  padding: 0 2px;
+}

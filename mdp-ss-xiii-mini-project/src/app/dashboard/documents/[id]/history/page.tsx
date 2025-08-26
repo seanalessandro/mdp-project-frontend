@@ -1,12 +1,14 @@
+// app/dashboard/documents/[id]/history/page.tsx
 "use client";
 
 import { useParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import * as api from '@/lib/api';
 import { Spin, Typography, Timeline, Button, Space, Card, Modal, message } from 'antd';
-import { useState } from 'react';
+import { useState, useMemo } from 'react'; // <-- Tambahkan useMemo di sini
 import { DocumentVersion } from '@/lib/types';
-import DiffViewer from '@/components/documents/DiffViewer'; // Import komponen baru
+import VersionPreview from '@/components/documents/VersionPreview';
+import DiffViewer from '@/components/documents/DiffViewer';
 
 export default function VersionHistoryPage() {
     const params = useParams();
@@ -20,16 +22,27 @@ export default function VersionHistoryPage() {
 
     const [fromVersion, setFromVersion] = useState<DocumentVersion | null>(null);
     const [toVersion, setToVersion] = useState<DocumentVersion | null>(null);
+    const [previewVersion, setPreviewVersion] = useState<DocumentVersion | null>(null);
     const [diffResult, setDiffResult] = useState(null);
     const [isComparing, setIsComparing] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
 
+    const handlePreviewClick = (version: DocumentVersion) => {
+        setPreviewVersion(version);
+        setIsModalVisible(true);
+        setFromVersion(null);
+        setToVersion(null);
+    };
+
     const handleCompareClick = (version: DocumentVersion) => {
+        setPreviewVersion(null);
         if (!fromVersion) {
             setFromVersion(version);
             message.info(`Versi ${version.version.toFixed(1)} dipilih. Pilih satu versi lagi untuk dibandingkan.`);
+        } else if (fromVersion.id === version.id) {
+            setFromVersion(null);
+            message.info('Pilihan dibatalkan.');
         } else {
-            // Urutkan agar 'from' selalu versi yang lebih lama
             const olderVersion = new Date(fromVersion.createdOn) < new Date(version.createdOn) ? fromVersion : version;
             const newerVersion = new Date(fromVersion.createdOn) < new Date(version.createdOn) ? version : fromVersion;
 
@@ -42,7 +55,6 @@ export default function VersionHistoryPage() {
         setIsComparing(true);
         setIsModalVisible(true);
         try {
-            // --- SERTAKAN docId DI SINI ---
             const result = await api.compareVersions(docId, v1.id, v2.id);
             setDiffResult(result);
         } catch (err: any) {
@@ -56,8 +68,43 @@ export default function VersionHistoryPage() {
         setFromVersion(null);
         setToVersion(null);
         setDiffResult(null);
+        setPreviewVersion(null);
         setIsModalVisible(false);
     };
+
+    // --- KODE BARU: BUAT ARRAY ITEM UNTUK TIMELINE ---
+    const timelineItems = useMemo(() => {
+        if (!versions) return [];
+        return versions.map((version: DocumentVersion) => ({
+            key: version.id,
+            children: (
+                <>
+                    <p>
+                        <strong>Versi {version.version.toFixed(1)}</strong> - <span style={{ color: '#888' }}>{version.changeDescription}</span>
+                    </p>
+                    <p style={{ fontSize: '12px', color: '#aaa' }}>
+                        oleh {version.createdByUsername || 'Unknown User'} pada {new Date(version.createdOn).toLocaleString('id-ID')}
+                    </p>
+                    <Space size="small" style={{ marginTop: '8px' }}>
+                        <Button
+                            size="small"
+                            onClick={() => handlePreviewClick(version)}
+                        >
+                            Lihat Versi Ini
+                        </Button>
+                        <Button
+                            size="small"
+                            type={fromVersion?.id === version.id ? 'primary' : 'default'}
+                            onClick={() => handleCompareClick(version)}
+                        >
+                            {fromVersion?.id === version.id ? 'Terpilih' : 'Bandingkan dari Versi Ini'}
+                        </Button>
+                    </Space>
+                </>
+            ),
+        }));
+    }, [versions, fromVersion]); // Dependency array untuk useMemo
+    // ----------------------------------------------------
 
     if (isLoading) return <div style={{ textAlign: 'center', padding: '50px' }}><Spin size="large" /></div>;
     if (error) return <div>Gagal memuat riwayat versi.</div>;
@@ -76,36 +123,36 @@ export default function VersionHistoryPage() {
                 <Typography.Text type="secondary">
                     {fromVersion ? `Bandingkan dengan Versi ${fromVersion.version.toFixed(1)}...` : 'Pilih sebuah versi untuk memulai perbandingan.'}
                 </Typography.Text>
-                <Timeline style={{ marginTop: '24px' }}>
-                    {(versions || []).map((version: DocumentVersion) => (
-                        <Timeline.Item key={version.id}>
-                            <p>
-                                <strong>Versi {version.version.toFixed(1)}</strong> - <span style={{ color: '#888' }}>{version.changeDescription}</span>
-                            </p>
-                            <p style={{ fontSize: '12px', color: '#aaa' }}>
-                                oleh {version.createdBy} pada {new Date(version.createdOn).toLocaleString('id-ID')}
-                            </p>
-                            <Button
-                                size="small"
-                                style={{ marginTop: '8px' }}
-                                type={fromVersion?.id === version.id ? 'primary' : 'default'}
-                                onClick={() => handleCompareClick(version)}
-                            >
-                                {fromVersion?.id === version.id ? 'Terpilih' : 'Bandingkan dari Versi Ini'}
-                            </Button>
-                        </Timeline.Item>
-                    ))}
-                </Timeline>
+                {/* GANTI KOMPONEN TIMELINE */}
+                <Timeline style={{ marginTop: '24px' }} items={timelineItems} />
             </Card>
 
             <Modal
-                title={`Membandingkan Versi ${fromVersion?.version.toFixed(1)} dengan Versi ${toVersion?.version.toFixed(1)}`}
+                title={previewVersion ? `Pratinjau Versi ${previewVersion.version.toFixed(1)}` :
+                    `Membandingkan Versi ${fromVersion?.version.toFixed(1)} dengan Versi ${toVersion?.version.toFixed(1)}`}
                 open={isModalVisible}
                 onCancel={clearComparison}
                 footer={[<Button key="back" onClick={clearComparison}>Tutup</Button>]}
-                width={1000}
+                width={previewVersion ? 800 : 1200}
             >
-                {isComparing ? <Spin /> : <DiffViewer diffs={diffResult} />}
+                {isComparing ? <Spin /> : (
+                    previewVersion ? (
+                        <VersionPreview content={previewVersion.content} />
+                    ) : (
+                        diffResult ? (
+                            <Space size="large" style={{ display: 'flex' }}>
+                                <div style={{ flex: 1 }}>
+                                    <Typography.Title level={4}>Versi Lama</Typography.Title>
+                                    <VersionPreview content={(diffResult as any).fromContent} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <Typography.Title level={4}>Versi Baru</Typography.Title>
+                                    <VersionPreview content={(diffResult as any).toContent} />
+                                </div>
+                            </Space>
+                        ) : null
+                    )
+                )}
             </Modal>
         </Space>
     );

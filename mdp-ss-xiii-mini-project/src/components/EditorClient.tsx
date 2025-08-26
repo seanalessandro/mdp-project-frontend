@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button, Input, Spin, message, Space, Layout, Tag, Popconfirm, Select, Dropdown } from 'antd'; // Added Dropdown
-import { DownloadOutlined, EyeOutlined, FilePdfOutlined } from '@ant-design/icons'; // Added icons
+import { DownloadOutlined, EyeOutlined, FilePdfOutlined, HistoryOutlined } from '@ant-design/icons'; // Added icons
 import { useRouter } from 'next/navigation';
 import { useSWRConfig } from 'swr';
 import * as api from '@/lib/api';
@@ -115,7 +115,7 @@ export default function EditorClient({ documentData, docId }: { documentData: an
     const handlePDFExport = async () => {
         try {
             message.loading('Generating PDF...', 0);
-            
+
             const token = localStorage.getItem('token');
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/documents/${docId}/export/pdf`, {
                 method: 'GET',
@@ -130,23 +130,23 @@ export default function EditorClient({ documentData, docId }: { documentData: an
 
             // Get the PDF blob
             const blob = await response.blob();
-            
+
             // Create download link
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            
+
             // Generate filename with timestamp
             const timestamp = new Date().toISOString().slice(0, 10);
             const sanitizedTitle = title.replace(/[^\w\s-]/g, '').slice(0, 50);
             link.download = `${sanitizedTitle}_${timestamp}.pdf`;
-            
+
             // Trigger download
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            
+
             message.destroy();
             message.success('PDF downloaded successfully!');
         } catch (error) {
@@ -159,18 +159,18 @@ export default function EditorClient({ documentData, docId }: { documentData: an
     const handlePDFPreview = async () => {
         try {
             message.loading('Opening PDF preview...', 1);
-            
+
             // Simply open the preview URL in a new tab
             // The backend authentication middleware will handle the token validation
             const previewUrl = `${process.env.NEXT_PUBLIC_API_URL}/documents/${docId}/preview/pdf`;
-            
+
             // Create a temporary anchor to open the URL with Authorization header
             const token = localStorage.getItem('token');
             const a = document.createElement('a');
             a.href = previewUrl;
             a.target = '_blank';
             a.style.display = 'none';
-            
+
             // We'll use fetch to get the PDF and create an object URL
             const response = await fetch(previewUrl, {
                 method: 'GET',
@@ -185,12 +185,12 @@ export default function EditorClient({ documentData, docId }: { documentData: an
 
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);
-            
+
             window.open(blobUrl, '_blank');
-            
+
             // Clean up the blob URL after a delay to allow the window to load
             setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-            
+
         } catch (error) {
             message.error('Failed to open PDF preview. Please try again.');
             console.error('PDF Preview Error:', error);
@@ -218,12 +218,19 @@ export default function EditorClient({ documentData, docId }: { documentData: an
                                 <Space align="center">
                                     <Tag>{saveStatus}</Tag>
                                     <Tag color={status === 'Draft' ? 'default' : 'blue'}>{status}</Tag>
+                                    <Button
+                                        icon={<HistoryOutlined />}
+                                        onClick={() => router.push(`/dashboard/documents/${docId}/history`)}
+                                    >
+                                    </Button>
                                     <Select value={priority} onChange={handlePriorityChange} style={{ width: 120 }}>
                                         <Option value="High">High</Option>
                                         <Option value="Medium">Medium</Option>
                                         <Option value="Low">Low</Option>
                                     </Select>
-                                    
+
+                                        
+
                                     {/* PDF Export Buttons - FR-5.3.4 */}
                                     <Dropdown
                                         menu={{
@@ -248,7 +255,7 @@ export default function EditorClient({ documentData, docId }: { documentData: an
                                             Export PDF
                                         </Button>
                                     </Dropdown>
-                                    
+
                                     {status === 'Draft' && (
                                         <Popconfirm title="Submit for Review" onConfirm={() => handleSetStatus('In Review')} okText="Yes, Submit" cancelText="No">
                                             <Button>Ready for Review</Button>
