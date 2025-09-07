@@ -61,6 +61,17 @@ export interface Document extends BaseModel {
   docNo: string;
   version: number;
   priority: 'High' | 'Medium' | 'Low';
+  currentApprovalLevel: number;
+  approvals: ApprovalLevel[];
+}
+
+export interface ApprovalLevel {
+  roleName: string; // "SH", "BR", "DH", "GDH"
+  status: string; // "pending", "approved", "rejected"
+  approverId?: string;
+  approvedAt?: string;
+  rejectedAt?: string;
+  comments?: string;
 }
 export interface Comment extends BaseModel {
   documentId: string;
@@ -108,4 +119,32 @@ export interface DocumentVersion {
   createdOn: string;
   createdByUsername?: string;
   createdBy?: string;
+}
+
+export interface DashboardStats {
+  totalDocuments: number;
+  statusCounts: {
+    draft: number;
+    readyForReview: number;
+    waitingBR: number;
+    waitingDH: number;
+    finalApproved: number;
+    rejected: number;
+  };
+  recentDocuments: Document[];
+}
+
+export interface ApprovalStatusResponse {
+  documentId: string;
+  title: string;
+  status: string;
+  currentApprovalLevel: number;
+  approvals: ApprovalLevel[];
+  isFullyApproved: boolean;
+}
+
+export interface PendingDocumentsResponse {
+  role: string;
+  pendingDocuments: Document[];
+  count: number;
 }

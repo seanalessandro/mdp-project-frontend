@@ -6,6 +6,7 @@ import { getDashboardComponent } from "@/utils/roleRoutes";
 import AdminDashboard from "@/components/dashboard/AdminDashboard";
 import EditorDashboard from "@/components/dashboard/EditorDashboard";
 import ReviewerDashboard from "@/components/dashboard/ReviewerDashboard";
+import ApproverDashboard from "@/components/dashboard/ApproverDashboard";
 import { Card, Typography, Spin } from "antd";
 
 const { Title } = Typography;
@@ -60,6 +61,8 @@ export default function DashboardPage() {
         return <EditorDashboard />;
       case 'ReviewerDashboard':
         return <ReviewerDashboard />;
+      case 'ApproverDashboard':
+        return <ApproverDashboard role={role.name} />;
       default:
         return <DefaultDashboard />;
     }

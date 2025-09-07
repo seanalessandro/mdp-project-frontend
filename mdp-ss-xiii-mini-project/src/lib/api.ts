@@ -1,7 +1,7 @@
 import { LoginRequest, RoleRequest } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3033/api';
-import { CreateCommentPayload, CreateDocumentPayload } from './types';
+import { CreateCommentPayload } from './types';
 
 async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -138,9 +138,29 @@ export const updateDocument = (id: string, data: { title: string; content: strin
 });
 
 export const getMyDocuments = () => fetchApi('/documents');
+export const getDashboardStats = () => fetchApi('/documents/stats');
 export const deleteDocument = (id: string) => fetchApi(`/documents/${id}`, {
   method: 'DELETE',
 });
+
+// Approval Workflow API functions
+export const submitDocumentForReview = (id: string) => fetchApi(`/documents/${id}/submit-review`, {
+  method: 'POST',
+});
+
+export const approveDocument = (id: string, comments?: string) => fetchApi(`/documents/${id}/approve`, {
+  method: 'POST',
+  body: JSON.stringify({ comments: comments || '' }),
+});
+
+export const rejectDocument = (id: string, comments: string) => fetchApi(`/documents/${id}/reject`, {
+  method: 'POST',
+  body: JSON.stringify({ comments }),
+});
+
+export const getDocumentApprovalStatus = (id: string) => fetchApi(`/documents/${id}/approval-status`);
+
+export const getPendingDocumentsForApproval = (role: string) => fetchApi(`/approval/${role.toLowerCase()}/pending`);
 export const updateDocumentStatus = (id: string, status: string) => fetchApi(`/documents/${id}/status`, {
   method: 'PATCH',
   body: JSON.stringify({ status }),

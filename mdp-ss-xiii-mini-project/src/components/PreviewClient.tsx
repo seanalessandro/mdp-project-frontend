@@ -65,12 +65,20 @@ export default function PreviewClient({ documentData, docId }: { documentData: a
 
     const handleSetStatus = async (newStatus: string) => {
         try {
-            await api.updateDocumentStatus(docId, newStatus);
+            // If transitioning to "In Review", use the new approval workflow API
+            if (newStatus === 'In Review') {
+                await api.submitDocumentForReview(docId);
+                message.success("Dokumen diajukan untuk review dan proses approval");
+            } else {
+                // For other status changes, use the old API
+                await api.updateDocumentStatus(docId, newStatus);
+                message.success(`Dokumen ditandai sebagai "${newStatus}"`);
+            }
             setStatus(newStatus);
-            message.success(`Dokumen ditandai sebagai "${newStatus}"`);
             mutate(`/documents/${docId}`);
             mutate('/documents');
         } catch (err) {
+            console.error("Status update error:", err);
             message.error("Gagal memperbarui status dokumen.");
         }
     };
@@ -143,7 +151,7 @@ export default function PreviewClient({ documentData, docId }: { documentData: a
                         </Button>
 
                         {/* --- 2. ISI KARTU RIWAYAT DENGAN DATA --- */}
-                        <Card size="large" title={<><HistoryOutlined /> Riwayat Perubahan</>} style={{ marginTop: '16px' }}>
+                        <Card title={<><HistoryOutlined /> Riwayat Perubahan</>} style={{ marginTop: '16px' }}>
                             {isLoadingHistory ? <Spin /> : (
                                 <Timeline style={{ marginTop: '16px', paddingLeft: '8px' }}>
                                     {(history || []).map((log: ActivityLog) => (

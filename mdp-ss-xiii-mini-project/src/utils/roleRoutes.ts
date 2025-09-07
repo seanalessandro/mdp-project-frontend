@@ -37,11 +37,51 @@ export const ROLE_ROUTES: Record<string, RoleRouteConfig> = {
     allowedPaths: [
       '/dashboard',
       '/dashboard/documents',
-      '/dashboard/documents/new',
       '/dashboard/documents/edit',
       '/dashboard/profile'
     ],
     dashboardComponent: 'EditorDashboard'
+  },
+  // Approval roles - all use ApproverDashboard
+  sh: {
+    defaultPath: '/dashboard/approvals',
+    allowedPaths: [
+      '/dashboard',
+      '/dashboard/approvals',
+      '/dashboard/documents',
+      '/dashboard/profile'
+    ],
+    dashboardComponent: 'ApproverDashboard'
+  },
+  br: {
+    defaultPath: '/dashboard/approvals',
+    allowedPaths: [
+      '/dashboard',
+      '/dashboard/approvals',
+      '/dashboard/documents',
+      '/dashboard/profile'
+    ],
+    dashboardComponent: 'ApproverDashboard'
+  },
+  dh: {
+    defaultPath: '/dashboard/approvals',
+    allowedPaths: [
+      '/dashboard',
+      '/dashboard/approvals',
+      '/dashboard/documents',
+      '/dashboard/profile'
+    ],
+    dashboardComponent: 'ApproverDashboard'
+  },
+  gdh: {
+    defaultPath: '/dashboard/approvals',
+    allowedPaths: [
+      '/dashboard',
+      '/dashboard/approvals',
+      '/dashboard/documents',
+      '/dashboard/profile'
+    ],
+    dashboardComponent: 'ApproverDashboard'
   },
   reviewer: {
     defaultPath: '/dashboard',
@@ -153,7 +193,23 @@ export function getRoleNavigationItems(role: Role | null) {
     ],
     editor: [
       { key: '/dashboard/documents', icon: 'FileTextOutlined', label: 'My Documents' },
-      { key: '/dashboard/documents/new', icon: 'PlusOutlined', label: 'Create Document' },
+    ],
+    // Approval roles navigation
+    sh: [
+      { key: '/dashboard/approvals', icon: 'CheckCircleOutlined', label: 'Pending Approvals' },
+      { key: '/dashboard/documents', icon: 'FileTextOutlined', label: 'All Documents' },
+    ],
+    br: [
+      { key: '/dashboard/approvals', icon: 'CheckCircleOutlined', label: 'Pending Approvals' },
+      { key: '/dashboard/documents', icon: 'FileTextOutlined', label: 'All Documents' },
+    ],
+    dh: [
+      { key: '/dashboard/approvals', icon: 'CheckCircleOutlined', label: 'Pending Approvals' },
+      { key: '/dashboard/documents', icon: 'FileTextOutlined', label: 'All Documents' },
+    ],
+    gdh: [
+      { key: '/dashboard/approvals', icon: 'CheckCircleOutlined', label: 'Pending Approvals' },
+      { key: '/dashboard/documents', icon: 'FileTextOutlined', label: 'All Documents' },
     ],
     reviewer: [
       { key: '/dashboard/documents', icon: 'FileTextOutlined', label: 'Review Documents' },

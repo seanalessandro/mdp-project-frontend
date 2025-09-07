@@ -1,70 +1,150 @@
 "use client";
 
-import React from "react";
-import { Button, Card, Col, Row, Statistic, Typography, Space, Table, Tag, Progress } from "antd";
+import React, { useEffect, useState } from "react";
+import { Button, Card, Col, Row, Statistic, Typography, Space, Table, Tag, Progress, Spin, message } from "antd";
 import {
   FileTextOutlined,
   EditOutlined,
   ClockCircleOutlined,
   PlusOutlined,
   CheckCircleOutlined,
-  EyeOutlined
+  EyeOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { getDashboardStats, createDocument } from "@/lib/api";
+import { DashboardStats } from "@/lib/types";
+import CreateDocumentModal from "@/components/documents/CreateDocumentModal";
 
 const { Title, Text } = Typography;
 
 export default function EditorDashboard() {
   const { user, role } = useAuth();
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isTemplateModalVisible, setIsTemplateModalVisible] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  // Sample data for editor overview
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getDashboardStats();
+      setStats(data);
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      setError('Failed to load dashboard data');
+      message.error('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const handleTemplateSelect = async (templateId: string) => {
+    setIsProcessing(true);
+    setIsTemplateModalVisible(false);
+    try {
+      const newDoc = await createDocument(templateId);
+      message.success("Document created successfully!");
+      fetchDashboardData(); // Refresh dashboard data
+      router.push(`/dashboard/documents/${newDoc.id}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create document';
+      message.error(errorMessage);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (!stats || error) {
+    return (
+      <div className="text-center">
+        <Text type="secondary">{error || 'Failed to load dashboard data'}</Text>
+        <div className="mt-4">
+          <Button onClick={fetchDashboardData} loading={loading}>
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Dynamic stats based on real data
   const editorStats = [
-    { title: 'My Documents', value: 15, prefix: <FileTextOutlined />, suffix: 'docs' },
-    { title: 'In Progress', value: 8, prefix: <EditOutlined />, suffix: 'drafts' },
-    { title: 'Under Review', value: 4, prefix: <ClockCircleOutlined />, suffix: 'pending' },
-    { title: 'Published', value: 12, prefix: <CheckCircleOutlined />, suffix: 'live' },
+    { 
+      title: 'Total Documents', 
+      value: stats.totalDocuments, 
+      prefix: <FileTextOutlined />, 
+      suffix: 'docs' 
+    },
+    { 
+      title: 'Draft', 
+      value: stats.statusCounts.draft, 
+      prefix: <EditOutlined />, 
+      suffix: 'drafts' 
+    },
+    { 
+      title: 'In Review Process', 
+      value: stats.statusCounts.readyForReview + stats.statusCounts.waitingBR + stats.statusCounts.waitingDH, 
+      prefix: <ClockCircleOutlined />, 
+      suffix: 'pending' 
+    },
+    { 
+      title: 'Approved', 
+      value: stats.statusCounts.finalApproved, 
+      prefix: <CheckCircleOutlined />, 
+      suffix: 'final' 
+    },
   ];
 
-  const myDocuments = [
-    { 
-      key: '1', 
-      title: 'Project Requirements Document', 
-      status: 'draft',
-      lastModified: '2 hours ago',
-      progress: 75
-    },
-    { 
-      key: '2', 
-      title: 'User Manual v2.0', 
-      status: 'review',
-      lastModified: '1 day ago',
-      progress: 100
-    },
-    { 
-      key: '3', 
-      title: 'API Documentation', 
-      status: 'published',
-      lastModified: '3 days ago',
-      progress: 100
-    },
-    { 
-      key: '4', 
-      title: 'Release Notes Q4', 
-      status: 'draft',
-      lastModified: '5 days ago',
-      progress: 30
-    },
-  ];
+  // Helper function to format relative time
+  const getRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+    
+    return date.toLocaleDateString();
+  };
+
+  // Convert recent documents to table format
+  const myDocuments = stats.recentDocuments.map((doc) => ({
+    key: doc.id,
+    title: doc.title,
+    status: doc.status.toLowerCase(),
+    lastModified: getRelativeTime(doc.modifiedOn),
+    docId: doc.id,
+  }));
 
   const getStatusTag = (status: string) => {
     const statusConfig = {
-      draft: { color: 'blue', text: 'Draft' },
-      review: { color: 'orange', text: 'Under Review' },
-      published: { color: 'green', text: 'Published' },
+      'draft': { color: 'blue', text: 'Draft' },
+      'ready for review': { color: 'orange', text: 'Ready for Review' },
+      'menunggu persetujuan br': { color: 'orange', text: 'Waiting BR Approval' },
+      'menunggu persetujuan dh': { color: 'orange', text: 'Waiting DH Approval' },
+      'final approved': { color: 'green', text: 'Final Approved' },
+      'rejected': { color: 'red', text: 'Rejected' },
     };
-    const config = statusConfig[status as keyof typeof statusConfig];
+    const config = statusConfig[status as keyof typeof statusConfig] || { color: 'default', text: status };
     return <Tag color={config.color}>{config.text}</Tag>;
   };
 
@@ -87,14 +167,6 @@ export default function EditorDashboard() {
       render: (status: string) => getStatusTag(status),
     },
     {
-      title: 'Progress',
-      dataIndex: 'progress',
-      key: 'progress',
-      render: (progress: number) => (
-        <Progress percent={progress} size="small" />
-      ),
-    },
-    {
       title: 'Last Modified',
       dataIndex: 'lastModified',
       key: 'lastModified',
@@ -102,16 +174,21 @@ export default function EditorDashboard() {
     {
       title: 'Actions',
       key: 'actions',
-      render: (_: unknown, record: { status: string }) => (
+      render: (_: unknown, record: { status: string; docId: string }) => (
         <Space>
           <Button 
             size="small" 
             icon={<EditOutlined />}
             type={record.status === 'draft' ? 'primary' : 'default'}
+            onClick={() => router.push(`/dashboard/documents/${record.docId}`)}
           >
             Edit
           </Button>
-          <Button size="small" icon={<EyeOutlined />}>
+          <Button 
+            size="small" 
+            icon={<EyeOutlined />}
+            onClick={() => router.push(`/dashboard/documents/preview/${record.docId}`)}
+          >
             View
           </Button>
         </Space>
@@ -140,6 +217,15 @@ export default function EditorDashboard() {
               <Tag color="green" icon={<EditOutlined />}>
                 {role?.name || 'Editor'}
               </Tag>
+              <Button 
+                icon={<ReloadOutlined />} 
+                onClick={fetchDashboardData} 
+                loading={loading}
+                type="text"
+                title="Refresh Dashboard"
+              >
+                Refresh
+              </Button>
             </Space>
           </Col>
         </Row>
@@ -171,7 +257,8 @@ export default function EditorDashboard() {
                 type="primary" 
                 icon={<PlusOutlined />} 
                 block
-                onClick={() => router.push('/dashboard/documents/new')}
+                onClick={() => setIsTemplateModalVisible(true)}
+                loading={isProcessing}
               >
                 Create New Document
               </Button>
@@ -186,8 +273,9 @@ export default function EditorDashboard() {
                 icon={<ClockCircleOutlined />} 
                 block
                 type="dashed"
+                onClick={() => router.push('/dashboard/documents?status=draft')}
               >
-                Drafts & Templates
+                View Drafts
               </Button>
             </Space>
           </Card>
@@ -200,6 +288,9 @@ export default function EditorDashboard() {
               columns={columns}
               pagination={false}
               size="small"
+              locale={{
+                emptyText: "No recent documents found. Create your first document to get started!"
+              }}
             />
             <div className="text-center mt-4">
               <Button 
@@ -225,47 +316,47 @@ export default function EditorDashboard() {
                   <div className="mt-2">
                     <Progress 
                       type="circle" 
-                      percent={60} 
+                      percent={stats.totalDocuments > 0 ? Math.round((stats.statusCounts.draft / stats.totalDocuments) * 100) : 0} 
                       size={80}
                       strokeColor="#1890ff"
                     />
                   </div>
                   <Text type="secondary" className="block mt-2">
-                    8 documents in progress
+                    {stats.statusCounts.draft} documents in progress
                   </Text>
                 </Card>
               </Col>
               <Col xs={24} sm={8}>
                 <Card size="small" className="text-center">
                   <div className="text-2xl mb-2">👁️</div>
-                  <Text strong>Review Phase</Text>
+                  <Text strong>Review Process</Text>
                   <div className="mt-2">
                     <Progress 
                       type="circle" 
-                      percent={80} 
+                      percent={stats.totalDocuments > 0 ? Math.round(((stats.statusCounts.readyForReview + stats.statusCounts.waitingBR + stats.statusCounts.waitingDH) / stats.totalDocuments) * 100) : 0} 
                       size={80}
                       strokeColor="#faad14"
                     />
                   </div>
                   <Text type="secondary" className="block mt-2">
-                    4 documents under review
+                    {stats.statusCounts.readyForReview + stats.statusCounts.waitingBR + stats.statusCounts.waitingDH} documents in review process
                   </Text>
                 </Card>
               </Col>
               <Col xs={24} sm={8}>
                 <Card size="small" className="text-center">
                   <div className="text-2xl mb-2">✅</div>
-                  <Text strong>Published</Text>
+                  <Text strong>Final Approved</Text>
                   <div className="mt-2">
                     <Progress 
                       type="circle" 
-                      percent={100} 
+                      percent={stats.totalDocuments > 0 ? Math.round((stats.statusCounts.finalApproved / stats.totalDocuments) * 100) : 0} 
                       size={80}
                       strokeColor="#52c41a"
                     />
                   </div>
                   <Text type="secondary" className="block mt-2">
-                    12 documents live
+                    {stats.statusCounts.finalApproved} documents approved
                   </Text>
                 </Card>
               </Col>
@@ -273,6 +364,12 @@ export default function EditorDashboard() {
           </Card>
         </Col>
       </Row>
+
+      <CreateDocumentModal
+        open={isTemplateModalVisible}
+        onCancel={() => setIsTemplateModalVisible(false)}
+        onSelect={handleTemplateSelect}
+      />
     </div>
   );
 }
