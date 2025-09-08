@@ -232,20 +232,21 @@ export const updateMenuStatus = async (id: string, isActive: boolean): Promise<v
   });
 };
 
-export const getRoleMenus = () => fetchApi('/admin/role-menus');
-export const createRoleMenuMapping = (data: RoleMenuMappingRequest) => fetchApi('/admin/role-menus', {
-  method: 'POST',
-  body: JSON.stringify(data),
+
+export const createRoleMenuMapping = (data: RoleMenuMappingRequest) => fetchApi('/admin/role-menu-mappings', {
+    method: 'POST',
+    body: JSON.stringify(data),
 });
-export const updateRoleMenuMapping = (id: string, data: RoleMenuMappingRequest) => fetchApi(`/admin/role-menus/${id}`, {
-  method: 'PUT',
-  body: JSON.stringify(data),
+
+export const getRoleMenuMappings = () => fetchApi('/admin/role-menu-mappings');
+
+export const getRoleMenuMapping = (id: string) => fetchApi(`/admin/role-menu-mappings/${id}`);
+
+export const updateRoleMenuMapping = (id: string, data: RoleMenuMappingRequest) => fetchApi(`/admin/role-menu-mappings/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
 });
-export const deleteRoleMenuMapping = (id: string) => fetchApi(`/admin/role-menus/${id}`, {
-  method: 'DELETE',
-});
-export const getRoleMenusByRoleId = (roleId: string) => fetchApi(`/admin/role-menus/role/${roleId}`);
-export const updateRoleMenus = (roleId: string, menuIds: string[]) => fetchApi(`/admin/role-menus/${roleId}`, {
-  method: 'PUT',
-  body: JSON.stringify({ menuIds }),
+
+export const deleteRoleMenuMapping = (id: string) => fetchApi(`/admin/role-menu-mappings/${id}`, {
+    method: 'DELETE',
 });

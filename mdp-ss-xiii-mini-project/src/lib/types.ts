@@ -149,6 +149,7 @@ export interface PendingDocumentsResponse {
   count: number;
 }
 
+// Tipe untuk Menu
 export interface MenuType extends BaseModel {
   name: string;
   path: string;
@@ -157,16 +158,15 @@ export interface MenuType extends BaseModel {
   parentId?: string;
 }
 
-export interface RoleMenuMappingRequest {
-  roleId: string;
-  menuId: string;
-  isActive: boolean;
-}
-export interface UpdateRoleMenusRequest {
-  menuIds: string[];
-}
 export interface RoleMenuMapping extends BaseModel {
   roleId: string;
-  menuId: string;
+  menuIds: string[];
   isActive: boolean;
+}
+
+// Tipe untuk body request saat membuat/update mapping
+export interface RoleMenuMappingRequest {
+  roleId: string;
+  menuIds: string[];
+  isActive?: boolean;
 }
