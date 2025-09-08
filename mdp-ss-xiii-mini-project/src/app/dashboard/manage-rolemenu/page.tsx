@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import {
     Form,
-    Input,
+    Input, // <-- Tambahkan Input di sini
     Button,
     Table,
     Tag,
@@ -17,9 +17,9 @@ import {
     Select,
     Alert,
     Switch,
-    Spin 
+    Spin
 } from "antd";
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import useSWR from 'swr';
 import * as api from '@/lib/api';
 import { Role, MenuType, RoleMenuMapping, RoleMenuMappingRequest } from "@/lib/types";
@@ -30,6 +30,7 @@ const { Title } = Typography;
 export default function ManageRoleMenuMappingPage() {
     const [form] = Form.useForm();
     const [editingMapping, setEditingMapping] = useState<RoleMenuMapping | null>(null);
+    const [searchTerm, setSearchTerm] = useState(""); // <-- Tambahkan state untuk pencarian
 
     // Fetching all necessary data
     const { data: roles, error: rolesError, mutate: mutateRoles, isLoading: isLoadingRoles } = useSWR('/admin/roles', api.getRoles);
@@ -90,12 +91,23 @@ export default function ManageRoleMenuMappingPage() {
         return menuIds.map(menuId => menus?.find((m: MenuType) => m.id === menuId)?.name || "N/A");
     };
 
+    // <-- Tambahkan logika filtering di sini
+    const filteredMappings = mappings?.filter((mapping: RoleMenuMapping) => {
+        const roleName = getRoleName(mapping.roleId).toLowerCase();
+        const menuNames = getMenuNames(mapping.menuIds).join(', ').toLowerCase();
+        const lowerCaseSearchTerm = searchTerm.toLowerCase();
+
+        return roleName.includes(lowerCaseSearchTerm) || menuNames.includes(lowerCaseSearchTerm);
+    });
+    // -->
+
     const columns = [
         {
             title: 'Role',
             dataIndex: 'roleId',
             key: 'roleId',
             render: (roleId: string) => getRoleName(roleId),
+            sorter: (a: RoleMenuMapping, b: RoleMenuMapping) => getRoleName(a.roleId).localeCompare(getRoleName(b.roleId)),
         },
         {
             title: 'Menus',
@@ -177,15 +189,23 @@ export default function ManageRoleMenuMappingPage() {
 
                 <Col xs={24} lg={16}>
                     <Card title="Role-Menu Mappings List">
-                        <Spin spinning={isLoadingMappings}>
-                            <Table
-                                columns={columns}
-                                dataSource={mappings}
-                                rowKey="id"
-                                pagination={{ pageSize: 5 }}
-                                scroll={{ x: 'max-content' }}
+                        <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
+                            {/* Tambahkan komponen pencarian di sini */}
+                            <Input
+                                placeholder="Search by Role or Menu"
+                                prefix={<SearchOutlined />}
+                                onChange={(e) => setSearchTerm(e.target.value)}
                             />
-                        </Spin>
+                            <Spin spinning={isLoadingMappings}>
+                                <Table
+                                    columns={columns}
+                                    dataSource={filteredMappings} // <-- Gunakan data yang sudah difilter
+                                    rowKey="id"
+                                    pagination={{ pageSize: 5 }}
+                                    scroll={{ x: 'max-content' }}
+                                />
+                            </Spin>
+                        </Space>
                     </Card>
                 </Col>
             </Row>
