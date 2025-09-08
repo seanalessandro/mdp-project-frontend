@@ -115,7 +115,7 @@ export function getRoleBasedRoute(role: Role | null): string {
 
   const roleName = role.name.toLowerCase();
   const roleConfig = ROLE_ROUTES[roleName];
-  
+
   if (!roleConfig) {
     // Default fallback for unknown roles
     return '/dashboard';
@@ -135,7 +135,7 @@ export function hasRoleAccess(role: Role | null, path: string): boolean {
 
   const roleName = role.name.toLowerCase();
   const roleConfig = ROLE_ROUTES[roleName];
-  
+
   if (!roleConfig) {
     // Default access for unknown roles (basic dashboard only)
     return path === '/dashboard' || path === '/dashboard/profile';
@@ -157,7 +157,7 @@ export function getDashboardComponent(role: Role | null): string {
 
   const roleName = role.name.toLowerCase();
   const roleConfig = ROLE_ROUTES[roleName];
-  
+
   return roleConfig?.dashboardComponent || 'DefaultDashboard';
 }
 
@@ -170,7 +170,7 @@ export function getRoleNavigationItems(role: Role | null) {
   }
 
   const roleName = role.name.toLowerCase();
-  
+
   const baseItems = [
     { key: '/dashboard', icon: 'DesktopOutlined', label: 'Dashboard' },
   ];
@@ -179,6 +179,7 @@ export function getRoleNavigationItems(role: Role | null) {
     admin: [
       { key: '/dashboard/manage-users', icon: 'TeamOutlined', label: 'Manage Users' },
       { key: '/dashboard/manage-roles', icon: 'UserOutlined', label: 'Master Role' },
+      { key: '/dashboard/manage-menu', icon: 'UserOutlined', label: 'Master Menu' },
       { key: '/dashboard/documents', icon: 'FileTextOutlined', label: 'Documents' },
       { key: '/dashboard/reports', icon: 'BarChartOutlined', label: 'Reports' },
       { key: '/dashboard/settings', icon: 'SettingOutlined', label: 'Settings' },
@@ -186,6 +187,7 @@ export function getRoleNavigationItems(role: Role | null) {
     super_admin: [
       { key: '/dashboard/manage-users', icon: 'TeamOutlined', label: 'Manage Users' },
       { key: '/dashboard/manage-roles', icon: 'UserOutlined', label: 'Master Role' },
+      { key: '/dashboard/manage-menu', icon: 'UserOutlined', label: 'Master Menu' },
       { key: '/dashboard/documents', icon: 'FileTextOutlined', label: 'Documents' },
       { key: '/dashboard/reports', icon: 'BarChartOutlined', label: 'Reports' },
       { key: '/dashboard/settings', icon: 'SettingOutlined', label: 'Settings' },
@@ -220,7 +222,7 @@ export function getRoleNavigationItems(role: Role | null) {
   };
 
   const roleItems = roleSpecificItems[roleName as keyof typeof roleSpecificItems] || [];
-  
+
   return [
     ...baseItems,
     ...roleItems,

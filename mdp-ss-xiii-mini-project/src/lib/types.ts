@@ -148,3 +148,11 @@ export interface PendingDocumentsResponse {
   pendingDocuments: Document[];
   count: number;
 }
+
+export interface MenuType extends BaseModel {
+  name: string;
+  path: string;
+  icon: string;
+  isActive: boolean;
+  parentId?: string;
+}

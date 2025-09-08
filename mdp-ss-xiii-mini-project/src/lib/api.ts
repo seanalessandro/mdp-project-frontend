@@ -1,4 +1,4 @@
-import { LoginRequest, RoleRequest } from "./types";
+import { LoginRequest, RoleRequest, MenuType } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3033/api';
 import { CreateCommentPayload } from './types';
@@ -169,7 +169,7 @@ export const updateDocumentStatus = (id: string, status: string) => fetchApi(`/d
 export const getDocumentHistory = (docId: string) => fetchApi(`/documents/${docId}/history`);
 export const getVersionHistory = (docId: string) => fetchApi(`/documents/${docId}/versions`);
 export const compareVersions = (docId: string, fromId: string, toId: string) => {
-    return fetchApi(`/documents/${docId}/versions/compare?from=${fromId}&to=${toId}`);
+  return fetchApi(`/documents/${docId}/versions/compare?from=${fromId}&to=${toId}`);
 };
 export const getTemplates = () => fetchApi('/templates');
 export const getDocumentTemplates = () => fetchApi('/document-templates');
@@ -197,3 +197,37 @@ export const createReply = (commentId: string, content: string) =>
     method: 'POST',
     body: JSON.stringify({ content }),
   });
+
+
+export const getMenus = async (): Promise<MenuType[]> => {
+  const response = await fetchApi('/admin/menus');
+  return response as MenuType[];
+};
+
+export const createMenu = async (menuData: Omit<MenuType, 'id' | 'createdOn' | 'modifiedOn'>): Promise<MenuType> => {
+  const response = await fetchApi('/admin/menus', {
+    method: 'POST',
+    body: JSON.stringify(menuData),
+  });
+  return response as MenuType;
+};
+
+export const updateMenu = async (id: string, menuData: Partial<MenuType>): Promise<void> => {
+  await fetchApi(`/admin/menus/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(menuData),
+  });
+};
+
+export const deleteMenu = async (id: string): Promise<void> => {
+  await fetchApi(`/admin/menus/${id}`, {
+    method: 'DELETE',
+  });
+};
+
+export const updateMenuStatus = async (id: string, isActive: boolean): Promise<void> => {
+  await fetchApi(`/admin/menus/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isActive }),
+  });
+};
