@@ -1,4 +1,4 @@
-import { LoginRequest, RoleRequest, MenuType } from "./types";
+import { LoginRequest, RoleRequest, MenuType, RoleMenuMappingRequest } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3033/api';
 import { CreateCommentPayload } from './types';
@@ -231,3 +231,21 @@ export const updateMenuStatus = async (id: string, isActive: boolean): Promise<v
     body: JSON.stringify({ isActive }),
   });
 };
+
+export const getRoleMenus = () => fetchApi('/admin/role-menus');
+export const createRoleMenuMapping = (data: RoleMenuMappingRequest) => fetchApi('/admin/role-menus', {
+  method: 'POST',
+  body: JSON.stringify(data),
+});
+export const updateRoleMenuMapping = (id: string, data: RoleMenuMappingRequest) => fetchApi(`/admin/role-menus/${id}`, {
+  method: 'PUT',
+  body: JSON.stringify(data),
+});
+export const deleteRoleMenuMapping = (id: string) => fetchApi(`/admin/role-menus/${id}`, {
+  method: 'DELETE',
+});
+export const getRoleMenusByRoleId = (roleId: string) => fetchApi(`/admin/role-menus/role/${roleId}`);
+export const updateRoleMenus = (roleId: string, menuIds: string[]) => fetchApi(`/admin/role-menus/${roleId}`, {
+  method: 'PUT',
+  body: JSON.stringify({ menuIds }),
+});

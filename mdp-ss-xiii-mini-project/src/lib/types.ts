@@ -156,3 +156,17 @@ export interface MenuType extends BaseModel {
   isActive: boolean;
   parentId?: string;
 }
+
+export interface RoleMenuMappingRequest {
+  roleId: string;
+  menuId: string;
+  isActive: boolean;
+}
+export interface UpdateRoleMenusRequest {
+  menuIds: string[];
+}
+export interface RoleMenuMapping extends BaseModel {
+  roleId: string;
+  menuId: string;
+  isActive: boolean;
+}

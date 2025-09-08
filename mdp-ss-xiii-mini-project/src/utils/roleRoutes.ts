@@ -180,6 +180,7 @@ export function getRoleNavigationItems(role: Role | null) {
       { key: '/dashboard/manage-users', icon: 'TeamOutlined', label: 'Manage Users' },
       { key: '/dashboard/manage-roles', icon: 'UserOutlined', label: 'Master Role' },
       { key: '/dashboard/manage-menu', icon: 'UserOutlined', label: 'Master Menu' },
+      { key: '/dashboard/manage-rolemenu', icon: 'UserOutlined', label: 'Mapping Role vs Menu' },
       { key: '/dashboard/documents', icon: 'FileTextOutlined', label: 'Documents' },
       { key: '/dashboard/reports', icon: 'BarChartOutlined', label: 'Reports' },
       { key: '/dashboard/settings', icon: 'SettingOutlined', label: 'Settings' },

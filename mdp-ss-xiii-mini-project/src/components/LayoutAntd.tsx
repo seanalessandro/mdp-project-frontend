@@ -37,6 +37,7 @@ const pageRoutes = [
     getItem('Manajemen User', '/manage-users', <TeamOutlined />),
     getItem('Master Role', '/master-role', <SolutionOutlined />),
     getItem('Master Menu', '/master-menu', <SolutionOutlined />),
+    getItem('Mapping Role vs Menu', '/master-rolemenu', <SolutionOutlined />),
     // Anda bisa menambahkan item menu lain di sini, termasuk sub-menu
     // getItem('Pengaturan', 'sub-settings', <SettingOutlined />, [
     //   getItem('Profil', '/settings/profile'),
