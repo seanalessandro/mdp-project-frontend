@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Button, Input, Spin, message, Space, Layout, Tag, Popconfirm, Select, Dropdown } from 'antd'; // Added Dropdown
-import { DownloadOutlined, EyeOutlined, FilePdfOutlined } from '@ant-design/icons'; // Added icons
+import { Button, Input, Spin, message, Space, Layout, Tag, Popconfirm, Select, Dropdown, Modal } from 'antd'; // Added Dropdown
+import { DownloadOutlined, EyeOutlined, FilePdfOutlined, HistoryOutlined, BranchesOutlined } from '@ant-design/icons'; // Added icons
 import { useRouter } from 'next/navigation';
 import { useSWRConfig } from 'swr';
 import * as api from '@/lib/api';
@@ -11,6 +11,7 @@ import { SimpleEditor } from '@/components/tiptap-templates/simple/simple-editor
 import CommentSection from './CommentSection';
 import debounce from 'lodash.debounce';
 import '@/app/dashboard/documents/[id]/editor-scoped.css';
+
 
 const { Option } = Select;
 const { Content } = Layout;
@@ -26,6 +27,7 @@ export default function EditorClient({ documentData, docId }: { documentData: an
     const [priority, setPriority] = useState('Medium'); // State baru untuk prioritas
     const [isSaving, setIsSaving] = useState(false);
     const [currentEditor, setCurrentEditor] = useState<Editor | null>(null);
+    const [isVersionModalVisible, setIsVersionModalVisible] = useState(false);
     type SaveStatus = "Unsaved changes" | "Saving..." | "Saved";
     const [saveStatus, setSaveStatus] = useState<SaveStatus>("Saved");
 
@@ -118,11 +120,25 @@ export default function EditorClient({ documentData, docId }: { documentData: an
         }
     };
 
+    const handleReviseDocument = async () => {
+        handleManualSave();
+        try {
+            await api.reviseDocument(docId);
+            message.success('Dokumen berhasil direvisi. Versi baru telah dibuat.');
+            globalMutate(`/documents/${docId}`);
+            router.push(`/dashboard/documents/preview/${docId}`);
+        } catch (err: any) {
+            console.error("Revision error:", err);
+            message.error(err.message || 'Gagal memulai revisi dokumen.');
+        }
+    };
+
+
     // PDF Export Functions - FR-5.3.4
     const handlePDFExport = async () => {
         try {
             message.loading('Generating PDF...', 0);
-            
+
             const token = localStorage.getItem('token');
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/documents/${docId}/export/pdf`, {
                 method: 'GET',
@@ -137,23 +153,23 @@ export default function EditorClient({ documentData, docId }: { documentData: an
 
             // Get the PDF blob
             const blob = await response.blob();
-            
+
             // Create download link
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            
+
             // Generate filename with timestamp
             const timestamp = new Date().toISOString().slice(0, 10);
             const sanitizedTitle = title.replace(/[^\w\s-]/g, '').slice(0, 50);
             link.download = `${sanitizedTitle}_${timestamp}.pdf`;
-            
+
             // Trigger download
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            
+
             message.destroy();
             message.success('PDF downloaded successfully!');
         } catch (error) {
@@ -166,18 +182,18 @@ export default function EditorClient({ documentData, docId }: { documentData: an
     const handlePDFPreview = async () => {
         try {
             message.loading('Opening PDF preview...', 1);
-            
+
             // Simply open the preview URL in a new tab
             // The backend authentication middleware will handle the token validation
             const previewUrl = `${process.env.NEXT_PUBLIC_API_URL}/documents/${docId}/preview/pdf`;
-            
+
             // Create a temporary anchor to open the URL with Authorization header
             const token = localStorage.getItem('token');
             const a = document.createElement('a');
             a.href = previewUrl;
             a.target = '_blank';
             a.style.display = 'none';
-            
+
             // We'll use fetch to get the PDF and create an object URL
             const response = await fetch(previewUrl, {
                 method: 'GET',
@@ -192,17 +208,20 @@ export default function EditorClient({ documentData, docId }: { documentData: an
 
             const blob = await response.blob();
             const blobUrl = URL.createObjectURL(blob);
-            
+
             window.open(blobUrl, '_blank');
-            
+
             // Clean up the blob URL after a delay to allow the window to load
             setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-            
+
         } catch (error) {
             message.error('Failed to open PDF preview. Please try again.');
             console.error('PDF Preview Error:', error);
         }
     };
+
+
+
     return (
         <div style={{ margin: -24, background: 'transparent' }}>
             <Content>
@@ -222,15 +241,30 @@ export default function EditorClient({ documentData, docId }: { documentData: an
                                     <Input id="docNo-input" value={docNo} onChange={e => { setDocNo(e.target.value); handleValueChange(); }} variant="borderless" style={{ padding: 0, color: '#6B7280', fontSize: '14px' }} />
                                     <Input id="title-input" value={title} onChange={e => { setTitle(e.target.value); handleValueChange(); }} variant="borderless" style={{ padding: 0, fontSize: '24px', fontWeight: 600, lineHeight: '32px' }} />
                                 </Space>
+
                                 <Space align="center">
                                     <Tag>{saveStatus}</Tag>
                                     <Tag color={status === 'Draft' ? 'default' : 'blue'}>{status}</Tag>
+                                    <Button
+                                        icon={<HistoryOutlined />}
+                                        onClick={() => router.push(`/dashboard/documents/${docId}/history`)}
+                                    >
+                                    </Button>
+                                    <Popconfirm
+                                        title="Update versi dokumen"
+                                        description="Apakah Anda yakin ingin membuat versi baru dari dokumen ini?"
+                                        onConfirm={handleReviseDocument}
+                                        okText="Ya, Revisi"
+                                        cancelText="Batal"
+                                    >
+                                        <Button icon={<BranchesOutlined />}>Update Version</Button>
+                                    </Popconfirm>
                                     <Select value={priority} onChange={handlePriorityChange} style={{ width: 120 }}>
                                         <Option value="High">High</Option>
                                         <Option value="Medium">Medium</Option>
                                         <Option value="Low">Low</Option>
                                     </Select>
-                                    
+
                                     {/* PDF Export Buttons - FR-5.3.4 */}
                                     <Dropdown
                                         menu={{
@@ -255,7 +289,10 @@ export default function EditorClient({ documentData, docId }: { documentData: an
                                             Export PDF
                                         </Button>
                                     </Dropdown>
-                                    
+
+
+
+
                                     {status === 'Draft' && (
                                         <Popconfirm title="Submit for Review" onConfirm={() => handleSetStatus('In Review')} okText="Yes, Submit" cancelText="No">
                                             <Button>Ready for Review</Button>
@@ -270,6 +307,9 @@ export default function EditorClient({ documentData, docId }: { documentData: an
                 </div>
                 {/* <CommentSection docId={docId} /> */}
             </Content>
+
+
+
         </div>
     );
 }

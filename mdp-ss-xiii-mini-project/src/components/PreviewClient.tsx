@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Layout, Button, Space, Typography, Tag, Card, Popconfirm, message, Row, Col, Timeline, Spin } from 'antd'; // Import Timeline & Spin
+import { Layout, Button, Space, Typography, Tag, Card, Popconfirm, message, Row, Col, Timeline, Spin, Modal } from 'antd'; // Import Timeline & Spin
 import { EditOutlined, MailOutlined, HistoryOutlined, BranchesOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { useEditor, EditorContent } from '@tiptap/react';
 import useSWR, { useSWRConfig } from 'swr';
@@ -16,7 +16,7 @@ import { TableHeader } from '@tiptap/extension-table-header';
 import { Highlight } from '@tiptap/extension-highlight';
 import CommentSection from '@/components/CommentSection'; // Asumsi komponen ini ada
 import { ActivityLog } from '@/lib/types'; // Import tipe ActivityLog
-
+import ApprovalHistory from '@/components/documents/ApprovalHistory';
 import '@/app/dashboard/documents/[id]/editor-scoped.css';
 
 const { Content } = Layout;
@@ -25,6 +25,8 @@ export default function PreviewClient({ documentData, docId }: { documentData: a
     const router = useRouter();
     const { mutate } = useSWRConfig();
     const [status, setStatus] = useState("Draft");
+    const [isHistoryModalVisible, setIsHistoryModalVisible] = useState(false); // State untuk modal
+
 
     // --- 1. TAMBAHKAN SWR HOOK UNTUK MENGAMBIL RIWAYAT ---
     const { data: history, isLoading: isLoadingHistory } = useSWR(
@@ -33,6 +35,16 @@ export default function PreviewClient({ documentData, docId }: { documentData: a
     );
 
     // ----------------------------------------------------
+
+    const handleReviseDocument = async () => {
+        try {
+            await api.reviseDocument(docId); // Asumsi ada API baru
+            message.success('Dokumen berhasil direvisi dan versi baru dibuat.');
+            mutate(`/documents/${docId}`); // Perbarui data di halaman ini
+        } catch (err) {
+            message.error('Gagal membuat versi revisi.');
+        }
+    };
 
     useEffect(() => {
         if (documentData) {
@@ -143,12 +155,35 @@ export default function PreviewClient({ documentData, docId }: { documentData: a
                         >
                             Edit Dokumen
                         </Button>
+
+                        <Popconfirm
+                            title="Mulai Revisi"
+                            description="Apakah Anda yakin ingin merevisi dokumen ini dan membuat versi baru?"
+                            onConfirm={handleReviseDocument}
+                            okText="Ya, Revisi"
+                            cancelText="Batal"
+                        >
+                            <Button
+                                icon={<BranchesOutlined />} block size="large"
+                                style={{ padding: '24px', marginBottom: 12, background: '#B03A2E', color: 'white', borderColor: '#B03A2E' }}
+                            >
+                                Update Versi
+                            </Button>
+                        </Popconfirm>
                         <Button
                             icon={<MailOutlined />} block size="large"
                             style={{ padding: 24, background: '#15B8A6', color: 'white', borderColor: '#15B8A6' }}
                         >
                             Kirim Pengingat Email
                         </Button>
+                        <Button
+                            icon={<HistoryOutlined />} block size="large"
+                            onClick={() => setIsHistoryModalVisible(true)}
+                            style={{ marginTop: '16px', padding: '24px', background: '#32475A', color: 'white', borderColor: '#32475A' }}
+                        >
+                            Lihat Riwayat Persetujuan
+                        </Button>
+
 
                         {/* --- 2. ISI KARTU RIWAYAT DENGAN DATA --- */}
                         <Card title={<><HistoryOutlined /> Riwayat Perubahan</>} style={{ marginTop: '16px' }}>
@@ -172,6 +207,17 @@ export default function PreviewClient({ documentData, docId }: { documentData: a
             <div style={{ marginTop: '32px' }}>
                 <CommentSection docId={docId} />
             </div>
+
+            <Modal
+                title="Riwayat Persetujuan Dokumen"
+                open={isHistoryModalVisible}
+                onCancel={() => setIsHistoryModalVisible(false)}
+                footer={null}
+                width={700}
+            >
+                <ApprovalHistory docId={docId} />
+            </Modal>
+
         </Content>
     );
 }

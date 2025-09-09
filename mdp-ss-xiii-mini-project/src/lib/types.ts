@@ -1,5 +1,7 @@
 // /src/lib/types.ts
 
+export type ApprovalAction = 'approved' | 'rejected' | 'submitted';
+export type DocumentStatus = 'Draft' | 'Ready for Review' | 'Menunggu persetujuan BR' | 'Menunggu persetujuan DH' | 'Final Approved' | 'Rejected';
 // Tipe dasar dari backend Go
 export interface BaseModel {
   id: string;
@@ -169,4 +171,18 @@ export interface RoleMenuMappingRequest {
   roleId: string;
   menuIds: string[];
   isActive?: boolean;
+}
+
+export interface ApprovalHistoryEntry {
+  id: string;
+  documentId: string;
+  action: ApprovalAction; // <-- Memberi tipe yang ketat
+  level: number;
+  roleName: string;
+  userId: string;
+  username: string;
+  timestamp: string;
+  prevStatus: DocumentStatus;
+  newStatus: DocumentStatus;
+  comments?: string;
 }

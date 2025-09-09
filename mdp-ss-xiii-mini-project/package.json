@@ -35,6 +35,7 @@
     "dayjs": "^1.11.13",
     "lodash.debounce": "^4.0.8",
     "lodash.throttle": "^4.1.1",
+    "moment": "^2.30.1",
     "next": "15.4.5",
     "prosemirror-commands": "^1.7.1",
     "prosemirror-keymap": "^1.2.3",

@@ -1,4 +1,4 @@
-import { LoginRequest, RoleRequest, MenuType, RoleMenuMappingRequest } from "./types";
+import { LoginRequest, RoleRequest, MenuType, RoleMenuMappingRequest, ApprovalHistoryEntry } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3033/api';
 import { CreateCommentPayload } from './types';
@@ -234,8 +234,8 @@ export const updateMenuStatus = async (id: string, isActive: boolean): Promise<v
 
 
 export const createRoleMenuMapping = (data: RoleMenuMappingRequest) => fetchApi('/admin/role-menu-mappings', {
-    method: 'POST',
-    body: JSON.stringify(data),
+  method: 'POST',
+  body: JSON.stringify(data),
 });
 
 export const getRoleMenuMappings = () => fetchApi('/admin/role-menu-mappings');
@@ -243,10 +243,15 @@ export const getRoleMenuMappings = () => fetchApi('/admin/role-menu-mappings');
 export const getRoleMenuMapping = (id: string) => fetchApi(`/admin/role-menu-mappings/${id}`);
 
 export const updateRoleMenuMapping = (id: string, data: RoleMenuMappingRequest) => fetchApi(`/admin/role-menu-mappings/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
+  method: 'PUT',
+  body: JSON.stringify(data),
 });
 
 export const deleteRoleMenuMapping = (id: string) => fetchApi(`/admin/role-menu-mappings/${id}`, {
-    method: 'DELETE',
+  method: 'DELETE',
+});
+
+export const getDocumentApprovalHistory = (docId: string): Promise<ApprovalHistoryEntry[]> => fetchApi('/documents/' + docId + '/approval-history');
+export const reviseDocument = (docId: string) => fetchApi(`/documents/${docId}/revise`, {
+    method: 'POST',
 });
