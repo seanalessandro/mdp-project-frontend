@@ -84,6 +84,7 @@ export default function ApprovalHistory({ docId }: { docId: string }) {
                             {entry.action.toUpperCase()}
                         </Tag>
                         pada level <Tag color="geekblue">{entry.roleName || 'N/A'}</Tag>
+                        oleh <Tag icon={<UserOutlined />}>{entry.username}</Tag>
                     </Text>
                     {entry.comments && (
                         <Text type="secondary" italic>
@@ -92,6 +93,9 @@ export default function ApprovalHistory({ docId }: { docId: string }) {
                     )}
                     <Text>
                         Status berubah dari <Tag>{entry.prevStatus}</Tag> ke <Tag color={statusColors[getStatusKey(entry.newStatus)]}>{entry.newStatus}</Tag>
+                    </Text>
+                    <Text>
+                        Pada <Tag>{moment(entry.timestamp).format('YYYY-MM-DD HH:mm:ss')}</Tag> 
                     </Text>
                 </Space>
             </Card>
