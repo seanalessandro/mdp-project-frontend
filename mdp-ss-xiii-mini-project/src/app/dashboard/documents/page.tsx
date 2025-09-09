@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { Button, Table, Space, Typography, Popconfirm, message, Modal, Input, Row, Select, Tag, Tooltip, Col, Spin, Card } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useState, useRef, useMemo } from 'react';
+import { Button, Table, Space, Typography, Popconfirm, message, Input, Row, Select, Tag, Tooltip, Col, Card } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import type { InputRef } from 'antd';
+import type { ColumnType } from 'antd/es/table';
+import type { FilterConfirmProps } from 'antd/es/table/interface';
 import { useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import * as api from '@/lib/api';
-import { Document, DocumentTemplate } from '@/lib/types';
+import { Document } from '@/lib/types';
 import CreateDocumentModal from '@/components/documents/CreateDocumentModal';
 
 const { Option } = Select;
@@ -17,8 +20,84 @@ export default function DocumentsPage() {
 
     const [isTemplateModalVisible, setIsTemplateModalVisible] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // 🔎 state untuk global search & status filter
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
+
+    // 🔎 state untuk column search
+    const [searchText, setSearchText] = useState('');
+    const [searchedColumn, setSearchedColumn] = useState('');
+    const searchInput = useRef<InputRef>(null);
+
+    const handleSearch = (selectedKeys: string[], confirm: (param?: FilterConfirmProps) => void, dataIndex: string) => {
+        confirm();
+        setSearchText(selectedKeys[0]);
+        setSearchedColumn(dataIndex);
+    };
+
+    const handleReset = (clearFilters?: () => void) => {
+        clearFilters && clearFilters();
+        setSearchText('');
+    };
+
+    // helper search per kolom
+    const getColumnSearchProps = (dataIndex: keyof Document): ColumnType<Document> => ({
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+            <div style={{ padding: 8 }}>
+                <Input
+                    ref={searchInput}
+                    placeholder={`Search ${String(dataIndex)}`}
+                    value={selectedKeys[0]}
+                    onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+                    onPressEnter={() => handleSearch(selectedKeys as string[], confirm, String(dataIndex))}
+                    style={{ marginBottom: 8, display: 'block' }}
+                />
+                <Space>
+                    <Button
+                        type="primary"
+                        onClick={() => handleSearch(selectedKeys as string[], confirm, String(dataIndex))}
+                        icon={<SearchOutlined />}
+                        size="small"
+                        style={{ width: 90 }}
+                    >
+                        Search
+                    </Button>
+                    <Button onClick={() => handleReset(clearFilters)} size="small" style={{ width: 90 }}>
+                        Reset
+                    </Button>
+                </Space>
+            </div>
+        ),
+        filterIcon: (filtered: boolean) => (
+            <SearchOutlined style={{ color: filtered ? '#1677ff' : undefined }} />
+        ),
+        onFilter: (value, record) =>
+            record[dataIndex]
+                ? String(record[dataIndex]).toLowerCase().includes((value as string).toLowerCase())
+                : false,
+        onFilterDropdownOpenChange: (visible) => {
+            if (visible) {
+                setTimeout(() => searchInput.current?.select(), 100);
+            }
+        },
+        render: (text: string) =>
+            searchedColumn === dataIndex ? (
+                <span style={{ backgroundColor: '#ffc069', padding: 0 }}>{text}</span>
+            ) : (
+                text
+            ),
+    });
+
+    // 🔎 Global filtering (berdasarkan search utama + status)
+    const filteredDocuments = useMemo(() => {
+        if (!documents) return [];
+        return documents.filter((doc: Document) =>
+            (doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                doc.docNo.toLowerCase().includes(searchTerm.toLowerCase())) &&
+            (statusFilter === 'All' || doc.status === statusFilter)
+        );
+    }, [documents, searchTerm, statusFilter]);
 
     const handleTemplateSelect = async (templateId: string) => {
         setIsProcessing(true);
@@ -45,30 +124,31 @@ export default function DocumentsPage() {
         }
     };
 
-    const filteredDocuments = useMemo(() => {
-        if (!documents) return [];
-        return documents.filter((doc: Document) =>
-            (doc.title.toLowerCase().includes(searchTerm.toLowerCase()) || doc.docNo.toLowerCase().includes(searchTerm.toLowerCase())) &&
-            (statusFilter === 'All' || doc.status === statusFilter)
-        );
-    }, [documents, searchTerm, statusFilter]);
-
     const columns = [
         {
-            title: 'ID',
+            title: 'DOCUMENT NO',
             dataIndex: 'docNo',
             key: 'docNo',
-            sorter: (a: Document, b: Document) => a.docNo.localeCompare(b.docNo)
+            sorter: (a: Document, b: Document) => a.docNo.localeCompare(b.docNo),
+            ...getColumnSearchProps('docNo'),
         },
         {
             title: 'JUDUL',
             dataIndex: 'title',
-            key: 'title'
+            key: 'title',
+            ...getColumnSearchProps('title'),
         },
         {
             title: 'STATUS',
             dataIndex: 'status',
             key: 'status',
+            filters: [
+                { text: 'Draft', value: 'Draft' },
+                { text: 'In Review', value: 'In Review' },
+                { text: 'Approved', value: 'Approved' },
+                { text: 'Implemented', value: 'Implemented' },
+            ],
+            onFilter: (value: any, record: Document) => record.status === value,
             render: (status: string) => {
                 let color = 'default';
                 if (status === 'In Review') color = 'blue';
@@ -81,6 +161,12 @@ export default function DocumentsPage() {
             title: 'PRIORITAS',
             dataIndex: 'priority',
             key: 'priority',
+            filters: [
+                { text: 'High', value: 'High' },
+                { text: 'Medium', value: 'Medium' },
+                { text: 'Low', value: 'Low' },
+            ],
+            onFilter: (value: any, record: Document) => record.priority === value,
             render: (priority: string) => {
                 const color = priority === 'High' ? 'red' : priority === 'Medium' ? 'orange' : 'green';
                 return <Tag color={color}>{priority}</Tag>;
@@ -90,6 +176,7 @@ export default function DocumentsPage() {
             title: 'VERSI',
             dataIndex: 'version',
             key: 'version',
+            sorter: (a: Document, b: Document) => (a.version ?? 1) - (b.version ?? 1),
             render: (version: number) => version ? version.toFixed(1) : '1.0'
         },
         {
@@ -97,7 +184,12 @@ export default function DocumentsPage() {
             key: 'action',
             render: (_: any, record: Document) => (
                 <Space>
-                    <Tooltip title="Edit Document"><Button icon={<EditOutlined />} onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/documents/${record.id}`); }} /></Tooltip>
+                    <Tooltip title="Edit Document">
+                        <Button
+                            icon={<EditOutlined />}
+                            onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/documents/${record.id}`); }}
+                        />
+                    </Tooltip>
                     <Popconfirm
                         title="Hapus Dokumen"
                         description="Apakah Anda yakin ingin menghapus dokumen ini?"
@@ -127,6 +219,7 @@ export default function DocumentsPage() {
                 </Button>
             </Row>
 
+            {/* 🔎 Search utama */}
             <Row justify="space-between" gutter={16}>
                 <Col flex="auto">
                     <Input.Search
@@ -151,7 +244,7 @@ export default function DocumentsPage() {
             <Card bordered={false}>
                 <Table
                     columns={columns}
-                    dataSource={filteredDocuments}
+                    dataSource={filteredDocuments} // hasil global filter
                     loading={isLoadingDocs}
                     rowKey="id"
                     onRow={(record) => ({

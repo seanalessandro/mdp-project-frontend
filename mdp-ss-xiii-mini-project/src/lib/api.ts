@@ -255,3 +255,4 @@ export const getDocumentApprovalHistory = (docId: string): Promise<ApprovalHisto
 export const reviseDocument = (docId: string) => fetchApi(`/documents/${docId}/revise`, {
     method: 'POST',
 });
+
