@@ -41,8 +41,12 @@ export default function ApprovalHistory({ docId }: { docId: string }) {
                 const data = await api.getDocumentApprovalHistory(docId);
                 setHistory(data);
                 setError(null);
-            } catch (err: any) {
-                setError(err);
+            } catch (err: unknown) { // Ganti 'any' dengan 'unknown'
+                if (err instanceof Error) {
+                    setError(err); // Jika 'err' adalah instance dari Error, gunakan
+                } else {
+                    setError(new Error('An unknown error occurred')); // Jika tidak, buat Error baru
+                }
             } finally {
                 setIsLoading(false);
             }
@@ -88,14 +92,14 @@ export default function ApprovalHistory({ docId }: { docId: string }) {
                     </Text>
                     {entry.comments && (
                         <Text type="secondary" italic>
-                            Komentar: "{entry.comments}"
+                            Komentar: &quot;{entry.comments}&quot;
                         </Text>
                     )}
                     <Text>
                         Status berubah dari <Tag>{entry.prevStatus}</Tag> ke <Tag color={statusColors[getStatusKey(entry.newStatus)]}>{entry.newStatus}</Tag>
                     </Text>
                     <Text>
-                        Pada <Tag>{moment(entry.timestamp).format('YYYY-MM-DD HH:mm:ss')}</Tag> 
+                        Pada <Tag>{moment(entry.timestamp).format('YYYY-MM-DD HH:mm:ss')}</Tag>
                     </Text>
                 </Space>
             </Card>

@@ -22,10 +22,16 @@ import {
 import { EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import useSWR from 'swr';
 import * as api from '@/lib/api';
-import { Role, MenuType, RoleMenuMapping, RoleMenuMappingRequest } from "@/lib/types";
+import { Role, MenuType, RoleMenuMapping } from "@/lib/types";
 
 const { Option } = Select;
 const { Title } = Typography;
+
+interface RoleMenuFormValues {
+    roleId: string;
+    menuIds: string[];
+    isActive: boolean;
+}
 
 export default function ManageRoleMenuMappingPage() {
     const [form] = Form.useForm();
@@ -33,8 +39,8 @@ export default function ManageRoleMenuMappingPage() {
     const [searchTerm, setSearchTerm] = useState(""); // <-- Tambahkan state untuk pencarian
 
     // Fetching all necessary data
-    const { data: roles, error: rolesError, mutate: mutateRoles, isLoading: isLoadingRoles } = useSWR('/admin/roles', api.getRoles);
-    const { data: menus, error: menusError, mutate: mutateMenus, isLoading: isLoadingMenus } = useSWR('/admin/menus', api.getMenus);
+    const { data: roles, error: rolesError, isLoading: isLoadingRoles } = useSWR('/admin/roles', api.getRoles);
+    const { data: menus, error: menusError, isLoading: isLoadingMenus } = useSWR('/admin/menus', api.getMenus);
     const { data: mappings, error: mappingsError, mutate: mutateMappings, isLoading: isLoadingMappings } = useSWR('/admin/role-menu-mappings', api.getRoleMenuMappings);
 
     useEffect(() => {
@@ -54,21 +60,23 @@ export default function ManageRoleMenuMappingPage() {
         form.resetFields();
     };
 
-    const handleSubmit = async (values: any) => {
+    const handleSubmit = async (values: RoleMenuFormValues) => {
         try {
             if (editingMapping) {
-                // Update existing mapping
                 await api.updateRoleMenuMapping(editingMapping.id, values);
                 message.success("Mapping updated successfully!");
             } else {
-                // Create new mapping
                 await api.createRoleMenuMapping(values);
                 message.success("Mapping added successfully!");
             }
-            mutateMappings(); // Reload data
-            handleCancelEdit(); // Clear form
-        } catch (err: any) {
-            message.error(err.message || "Failed to save mapping.");
+            mutateMappings();
+            handleCancelEdit();
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                message.error(err.message || "Failed to save mapping.");
+            } else {
+                message.error("Failed to save mapping.");
+            }
         }
     };
 
@@ -77,8 +85,12 @@ export default function ManageRoleMenuMappingPage() {
             await api.deleteRoleMenuMapping(mappingId);
             message.success("Mapping deleted successfully!");
             mutateMappings();
-        } catch (err: any) {
-            message.error(err.message || "Failed to delete mapping.");
+        } catch (err: unknown) { 
+            if (err instanceof Error) {
+                message.error(err.message || "Failed to delete mapping.");
+            } else {
+                message.error("Failed to delete mapping.");
+            }
         }
     };
 
@@ -130,7 +142,7 @@ export default function ManageRoleMenuMappingPage() {
         {
             title: 'Actions',
             key: 'actions',
-            render: (_: any, record: RoleMenuMapping) => (
+            render: (_: unknown, record: RoleMenuMapping) => (
                 <Space size="middle">
                     <Button icon={<EditOutlined />} onClick={() => setEditingMapping(record)}>Edit</Button>
                     <Popconfirm

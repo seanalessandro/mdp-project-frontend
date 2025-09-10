@@ -18,10 +18,16 @@ import {
   Alert,
   Switch // <-- Make sure Switch is imported
 } from "antd";
-import { EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import useSWR from 'swr';
 import * as api from '@/lib/api';
 import { Role } from "@/lib/types";
+
+interface RoleFormValues {
+  name: string;
+  description: string;
+  permissions: string[];
+}
 
 export default function ManageRolesPage() {
   const [form] = Form.useForm();
@@ -48,7 +54,7 @@ export default function ManageRolesPage() {
     form.resetFields();
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async (values: RoleFormValues) => {
     const roleData = { ...values };
     try {
       if (editingRole) {
@@ -60,8 +66,12 @@ export default function ManageRolesPage() {
       }
       mutateRoles(); // Reload the table data
       handleCancelEdit(); // Clear the form
-    } catch (err: any) {
-      message.error(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        message.error(err.message);
+      } else {
+        message.error("An unknown error occurred.");
+      }
     }
   };
 
@@ -70,8 +80,12 @@ export default function ManageRolesPage() {
       await api.deleteRole(roleId);
       message.success("Role deleted successfully!");
       mutateRoles();
-    } catch (err: any) {
-      message.error(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        message.error(err.message);
+      } else {
+        message.error("An unknown error occurred while deleting the role.");
+      }
     }
   };
 
@@ -80,9 +94,12 @@ export default function ManageRolesPage() {
       await api.updateRoleStatus(role.id, checked);
       message.success(`Status for role ${role.name} changed successfully!`);
       mutateRoles();
-    } catch (err: any) {
-      message.error(err.message);
-      // Revert the switch state on failure if needed
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        message.error(err.message);
+      } else {
+        message.error("An unknown error occurred while changing the status.");
+      }
       mutateRoles();
     }
   };
@@ -121,7 +138,7 @@ export default function ManageRolesPage() {
     {
       title: 'Actions',
       key: 'action', // 'aksi' changed to 'action' for convention
-      render: (_: any, record: Role) => (
+      render: (_: unknown, record: Role) => (
         <Space size="middle">
           <Button icon={<EditOutlined />} onClick={() => setEditingRole(record)}>Edit</Button>
           <Popconfirm

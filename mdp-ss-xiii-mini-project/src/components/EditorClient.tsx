@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Button, Input, Spin, message, Space, Layout, Tag, Popconfirm, Select, Dropdown, Modal } from 'antd'; // Added Dropdown
+import { Button, Input, message, Space, Layout, Tag, Popconfirm, Select, Dropdown } from 'antd'; // Added Dropdown
 import { DownloadOutlined, EyeOutlined, FilePdfOutlined, HistoryOutlined, BranchesOutlined } from '@ant-design/icons'; // Added icons
 import { useRouter } from 'next/navigation';
 import { useSWRConfig } from 'swr';
 import * as api from '@/lib/api';
 import { Editor } from '@tiptap/core';
 import { SimpleEditor } from '@/components/tiptap-templates/simple/simple-editor';
-import CommentSection from './CommentSection';
 import debounce from 'lodash.debounce';
 import '@/app/dashboard/documents/[id]/editor-scoped.css';
 
@@ -16,7 +15,15 @@ import '@/app/dashboard/documents/[id]/editor-scoped.css';
 const { Option } = Select;
 const { Content } = Layout;
 
-export default function EditorClient({ documentData, docId }: { documentData: any, docId: string }) {
+interface DocumentProps {
+    title: string;
+    content: string;
+    status: string;
+    docNo: string;
+    priority: string;
+}
+
+export default function EditorClient({ documentData, docId }: { documentData: DocumentProps, docId: string }) {
     const router = useRouter();
     const { mutate: globalMutate } = useSWRConfig();
 
@@ -26,8 +33,6 @@ export default function EditorClient({ documentData, docId }: { documentData: an
     const [docNo, setDocNo] = useState('');
     const [priority, setPriority] = useState('Medium'); // State baru untuk prioritas
     const [isSaving, setIsSaving] = useState(false);
-    const [currentEditor, setCurrentEditor] = useState<Editor | null>(null);
-    const [isVersionModalVisible, setIsVersionModalVisible] = useState(false);
     type SaveStatus = "Unsaved changes" | "Saving..." | "Saved";
     const [saveStatus, setSaveStatus] = useState<SaveStatus>("Saved");
 
@@ -127,9 +132,13 @@ export default function EditorClient({ documentData, docId }: { documentData: an
             message.success('Dokumen berhasil direvisi. Versi baru telah dibuat.');
             globalMutate(`/documents/${docId}`);
             router.push(`/dashboard/documents/preview/${docId}`);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Revision error:", err);
-            message.error(err.message || 'Gagal memulai revisi dokumen.');
+            if (err instanceof Error) {
+                message.error(err.message || 'Gagal memulai revisi dokumen.');
+            } else {
+                message.error('Gagal memulai revisi dokumen.');
+            }
         }
     };
 
@@ -244,7 +253,16 @@ export default function EditorClient({ documentData, docId }: { documentData: an
 
                                 <Space align="center">
                                     <Tag>{saveStatus}</Tag>
-                                    <Tag color={status === 'Draft' ? 'default' : 'blue'}>{status}</Tag>
+                                    <Tag
+                                        color={
+                                            status === 'Draft' ? 'default' :
+                                                status === 'Rejected' ? 'red' :
+                                                    status === 'Final Approved' ? 'green' :
+                                                        'blue'
+                                        }
+                                    >
+                                        {status}
+                                    </Tag>
                                     <Button
                                         icon={<HistoryOutlined />}
                                         onClick={() => router.push(`/dashboard/documents/${docId}/history`)}
@@ -259,16 +277,7 @@ export default function EditorClient({ documentData, docId }: { documentData: an
                                     >
                                         <Button icon={<BranchesOutlined />}>Update Version</Button>
                                     </Popconfirm>
-                                    <Tag 
-                                        color={
-                                            status === 'Draft' ? 'default' : 
-                                            status === 'Rejected' ? 'red' : 
-                                            status === 'Final Approved' ? 'green' : 
-                                            'blue'
-                                        }
-                                    >
-                                        {status}
-                                    </Tag>
+
                                     <Select value={priority} onChange={handlePriorityChange} style={{ width: 120 }}>
                                         <Option value="High">High</Option>
                                         <Option value="Medium">Medium</Option>
@@ -299,12 +308,12 @@ export default function EditorClient({ documentData, docId }: { documentData: an
                                             Export PDF
                                         </Button>
                                     </Dropdown>
-                                    
+
                                     {(status === 'Draft' || status === 'Rejected') && (
-                                        <Popconfirm 
-                                            title={status === 'Rejected' ? "Resubmit for Review" : "Submit for Review"} 
-                                            onConfirm={() => handleSetStatus('In Review')} 
-                                            okText="Yes, Submit" 
+                                        <Popconfirm
+                                            title={status === 'Rejected' ? "Resubmit for Review" : "Submit for Review"}
+                                            onConfirm={() => handleSetStatus('In Review')}
+                                            okText="Yes, Submit"
                                             cancelText="No"
                                         >
                                             <Button>{status === 'Rejected' ? 'Resubmit for Review' : 'Ready for Review'}</Button>

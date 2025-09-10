@@ -2,9 +2,6 @@
 
 import React, { useState, useMemo } from 'react';
 import {
-    DesktopOutlined,
-    FileOutlined,
-    UserOutlined,
     DashboardOutlined, // Menambahkan ikon Dashboard
     TeamOutlined, // Menambahkan ikon untuk Manage Users
     SolutionOutlined, // Menambahkan ikon untuk Master Role
@@ -118,7 +115,7 @@ const LayoutAntd: React.FC<LayoutAntdProps> = ({ children }) => {
             const menuItem = pageRoutes.find(item => item && typeof item.key === 'string' && item.key === currentPath);
 
             // Perbaikan: Tambahkan type guard untuk properti label
-            let title = (menuItem && 'label' in menuItem && typeof menuItem.label === 'string')
+            const title = (menuItem && 'label' in menuItem && typeof menuItem.label === 'string')
                 ? menuItem.label
                 : segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' '); // Default jika tidak ditemukan di menu
 

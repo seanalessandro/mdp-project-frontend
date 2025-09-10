@@ -54,8 +54,12 @@ export default function ResetPasswordPage() {
             setTimeout(() => {
                 router.push('/auth/login');
             }, 2000);
-        } catch (error: any) {
-            message.error(error.message || 'Gagal reset password');
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                message.error(error.message || 'Gagal reset password');
+            } else {
+                message.error('Terjadi kesalahan yang tidak diketahui');
+            }
         } finally {
             setLoading(false);
         }
@@ -84,7 +88,7 @@ export default function ResetPasswordPage() {
                         <h1>Link Reset Tidak Valid</h1>
                         <p>Link reset password ini tidak valid atau sudah kadaluarsa.</p>
                     </div>
-                    <Link 
+                    <Link
                         href="/auth/forgot-password"
                         style={{ color: '#3b82f6', textDecoration: 'none' }}
                     >
@@ -113,10 +117,10 @@ export default function ResetPasswordPage() {
                 width: '100%'
             }}>
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-                    <div style={{ 
-                        width: '64px', 
-                        height: '64px', 
-                        backgroundColor: '#3b82f6', 
+                    <div style={{
+                        width: '64px',
+                        height: '64px',
+                        backgroundColor: '#3b82f6',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
@@ -138,29 +142,29 @@ export default function ResetPasswordPage() {
                 </div>
 
                 <Form form={form} onFinish={handleResetPassword} layout="vertical">
-                    <Form.Item 
-                        name="password" 
-                        label="Password Baru" 
+                    <Form.Item
+                        name="password"
+                        label="Password Baru"
                         rules={[
                             { required: true, message: 'Password wajib diisi' },
                             { min: 8, message: 'Password minimal 8 karakter' }
                         ]}
                     >
-                        <Input.Password 
-                            placeholder="Masukkan password baru" 
+                        <Input.Password
+                            placeholder="Masukkan password baru"
                             size="large"
                         />
                     </Form.Item>
 
-                    <Form.Item 
-                        name="confirmPassword" 
-                        label="Konfirmasi Password" 
+                    <Form.Item
+                        name="confirmPassword"
+                        label="Konfirmasi Password"
                         rules={[
                             { required: true, message: 'Konfirmasi password wajib diisi' }
                         ]}
                     >
-                        <Input.Password 
-                            placeholder="Konfirmasi password baru" 
+                        <Input.Password
+                            placeholder="Konfirmasi password baru"
                             size="large"
                         />
                     </Form.Item>
@@ -178,11 +182,11 @@ export default function ResetPasswordPage() {
                     </div>
 
                     <Form.Item>
-                        <Button 
-                            type="primary" 
-                            htmlType="submit" 
-                            loading={loading} 
-                            block 
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            loading={loading}
+                            block
                             size="large"
                             style={{ marginBottom: '1rem' }}
                         >
@@ -192,7 +196,7 @@ export default function ResetPasswordPage() {
                 </Form>
 
                 <div style={{ textAlign: 'center' }}>
-                    <Link 
+                    <Link
                         href="/auth/login"
                         style={{ color: '#3b82f6', textDecoration: 'none' }}
                     >

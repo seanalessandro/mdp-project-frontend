@@ -5,10 +5,14 @@ import { useParams, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import * as api from '@/lib/api';
 import { Spin, Typography, Timeline, Button, Space, Card, Modal, message } from 'antd';
-import { useState, useMemo } from 'react'; // <-- Tambahkan useMemo di sini
+import { useState, useMemo, useCallback } from 'react'; // <-- Tambahkan useMemo di sini
 import { DocumentVersion } from '@/lib/types';
 import VersionPreview from '@/components/documents/VersionPreview';
-import DiffViewer from '@/components/documents/DiffViewer';
+
+interface DiffResult {
+    fromContent: string;
+    toContent: string;
+}
 
 export default function VersionHistoryPage() {
     const params = useParams();
@@ -23,18 +27,35 @@ export default function VersionHistoryPage() {
     const [fromVersion, setFromVersion] = useState<DocumentVersion | null>(null);
     const [toVersion, setToVersion] = useState<DocumentVersion | null>(null);
     const [previewVersion, setPreviewVersion] = useState<DocumentVersion | null>(null);
-    const [diffResult, setDiffResult] = useState(null);
+    const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
     const [isComparing, setIsComparing] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
 
-    const handlePreviewClick = (version: DocumentVersion) => {
+    const handlePreviewClick = useCallback((version: DocumentVersion) => {
         setPreviewVersion(version);
         setIsModalVisible(true);
         setFromVersion(null);
         setToVersion(null);
-    };
+    }, [setPreviewVersion, setIsModalVisible, setFromVersion, setToVersion]);
 
-    const handleCompareClick = (version: DocumentVersion) => {
+    const triggerComparison = useCallback(async (v1: DocumentVersion, v2: DocumentVersion) => {
+        setIsComparing(true);
+        setIsModalVisible(true);
+        try {
+            const result = await api.compareVersions(docId, v1.id, v2.id);
+            setDiffResult(result);
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                message.error(err.message || "Gagal membandingkan versi.");
+            } else {
+                message.error("Gagal membandingkan versi. Kesalahan tidak diketahui.");
+            }
+        } finally {
+            setIsComparing(false);
+        }
+    }, [docId]);
+
+    const handleCompareClick = useCallback((version: DocumentVersion) => {
         setPreviewVersion(null);
         if (!fromVersion) {
             setFromVersion(version);
@@ -49,20 +70,7 @@ export default function VersionHistoryPage() {
             setToVersion(newerVersion);
             triggerComparison(olderVersion, newerVersion);
         }
-    };
-
-    const triggerComparison = async (v1: DocumentVersion, v2: DocumentVersion) => {
-        setIsComparing(true);
-        setIsModalVisible(true);
-        try {
-            const result = await api.compareVersions(docId, v1.id, v2.id);
-            setDiffResult(result);
-        } catch (err: any) {
-            message.error(err.message || "Gagal membandingkan versi.");
-        } finally {
-            setIsComparing(false);
-        }
-    };
+    }, [fromVersion, setFromVersion, setPreviewVersion, setToVersion, triggerComparison]);
 
     const clearComparison = () => {
         setFromVersion(null);
@@ -103,7 +111,7 @@ export default function VersionHistoryPage() {
                 </>
             ),
         }));
-    }, [versions, fromVersion]); // Dependency array untuk useMemo
+    }, [versions, fromVersion, handleCompareClick, handlePreviewClick]); // Dependency array untuk useMemo
     // ----------------------------------------------------
 
     if (isLoading) return <div style={{ textAlign: 'center', padding: '50px' }}><Spin size="large" /></div>;
@@ -143,11 +151,11 @@ export default function VersionHistoryPage() {
                             <Space size="large" style={{ display: 'flex' }}>
                                 <div style={{ flex: 1 }}>
                                     <Typography.Title level={4}>Versi Lama</Typography.Title>
-                                    <VersionPreview content={(diffResult as any).fromContent} />
+                                    <VersionPreview content={diffResult.fromContent} />
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <Typography.Title level={4}>Versi Baru</Typography.Title>
-                                    <VersionPreview content={(diffResult as any).toContent} />
+                                    <VersionPreview content={diffResult.toContent} />
                                 </div>
                             </Space>
                         ) : null

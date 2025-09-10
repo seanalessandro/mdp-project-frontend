@@ -21,7 +21,17 @@ import '@/app/dashboard/documents/[id]/editor-scoped.css';
 
 const { Content } = Layout;
 
-export default function PreviewClient({ documentData, docId }: { documentData: any, docId: string }) {
+interface DocumentProps {
+    title: string;
+    content: string;
+    status: string;
+    docNo: string;
+    version?: number;
+    priority: string;
+}
+
+
+export default function PreviewClient({ documentData, docId }: { documentData: DocumentProps, docId: string }) {
     const router = useRouter();
     const { mutate } = useSWRConfig();
     const [status, setStatus] = useState("Draft");
@@ -42,6 +52,7 @@ export default function PreviewClient({ documentData, docId }: { documentData: a
             message.success('Dokumen berhasil direvisi dan versi baru dibuat.');
             mutate(`/documents/${docId}`); // Perbarui data di halaman ini
         } catch (err) {
+            console.error("Error revising document:", err);
             message.error('Gagal membuat versi revisi.');
         }
     };

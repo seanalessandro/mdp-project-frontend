@@ -23,6 +23,14 @@ import useSWR from 'swr';
 import * as api from '@/lib/api';
 import { MenuType } from "@/lib/types";
 
+
+interface MenuFormValues {
+  name: string;
+  path: string;
+  icon?: string;
+  parentId?: string;
+}
+
 export default function ManageMenusPage() {
   const [form] = Form.useForm();
   const [editingMenu, setEditingMenu] = useState<MenuType | null>(null);
@@ -49,20 +57,35 @@ export default function ManageMenusPage() {
     form.resetFields();
   };
 
-  const handleSubmit = async (values: any) => {
-    const menuData = { ...values };
+  const handleSubmit = async (values: MenuFormValues) => {
     try {
       if (editingMenu) {
-        await api.updateMenu(editingMenu.id, menuData);
+        const updatedMenuData = {
+          ...values,
+          isActive: editingMenu.isActive,
+          icon: values.icon || '',
+          parentId: values.parentId || '',
+        };
+        await api.updateMenu(editingMenu.id, updatedMenuData);
         message.success("Menu berhasil diperbarui!");
       } else {
-        await api.createMenu(menuData);
+        const newMenuData = {
+          ...values,
+          isActive: true,
+          icon: values.icon || '',
+          parentId: values.parentId || '',
+        };
+        await api.createMenu(newMenuData);
         message.success("Menu berhasil ditambahkan!");
       }
-      mutateMenus(); // Muat ulang data
+      mutateMenus();
       handleCancelEdit();
-    } catch (err: any) {
-      message.error(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        message.error(err.message);
+      } else {
+        message.error("Terjadi kesalahan saat menyimpan menu.");
+      }
     }
   };
 
@@ -71,18 +94,27 @@ export default function ManageMenusPage() {
       await api.deleteMenu(menuId);
       message.success("Menu berhasil dihapus!");
       mutateMenus();
-    } catch (err: any) {
-      message.error(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        message.error(err.message);
+      } else {
+        message.error("Terjadi kesalahan saat menghapus menu.");
+      }
     }
   };
+
 
   const handleStatusChange = async (menu: MenuType, checked: boolean) => {
     try {
       await api.updateMenuStatus(menu.id, checked);
       message.success(`Status menu ${menu.name} berhasil diubah!`);
       mutateMenus();
-    } catch (err: any) {
-      message.error(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        message.error(err.message);
+      } else {
+        message.error("Terjadi kesalahan saat mengubah status.");
+      }
       mutateMenus();
     }
   };
@@ -131,7 +163,7 @@ export default function ManageMenusPage() {
     {
       title: 'Aksi',
       key: 'aksi',
-      render: (_: any, record: MenuType) => (
+      render: (_: unknown, record: MenuType) => (
         <Space size="middle">
           <Button icon={<EditOutlined />} onClick={() => setEditingMenu(record)}>Edit</Button>
           <Popconfirm

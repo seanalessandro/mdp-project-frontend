@@ -3,18 +3,29 @@
 import React, { useState, useMemo } from 'react';
 import useSWR, { useSWRConfig } from 'swr';
 import * as api from '@/lib/api';
-import { Avatar, Button, Form, Input, List, Spin, message, Space, Tooltip } from 'antd';
+import { Avatar, Button, Form, Input, Spin, message, Space, Tooltip } from 'antd';
 import { useAuth } from '@/context/AuthContext';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 
 dayjs.extend(relativeTime);
 
-const buildCommentTree = (comments: any[]): any[] => {
+interface CommentType {
+    _id: string;
+    content: string;
+    parentId?: string;
+    author: {
+        username: string;
+    };
+    createdOn: string;
+    children?: CommentType[];
+}
+
+const buildCommentTree = (comments: CommentType[]): CommentType[] => {
     if (!comments || comments.length === 0) return [];
 
     const commentMap = new Map();
-    const tree: any[] = [];
+    const tree: CommentType[] = [];
 
     comments.forEach(comment => {
         commentMap.set(comment._id, { ...comment, children: [] });
@@ -32,7 +43,16 @@ const buildCommentTree = (comments: any[]): any[] => {
     return tree;
 };
 
-const CustomComment = ({ actions, author, avatar, content, datetime, children }: any) => {
+interface CustomCommentProps {
+    actions: React.ReactNode[];
+    author: React.ReactNode;
+    avatar: React.ReactNode;
+    content: React.ReactNode;
+    datetime?: string;
+    children?: React.ReactNode;
+}
+
+const CustomComment: React.FC<CustomCommentProps> = ({ actions, author, avatar, content, datetime, children }) => {
     return (
         <div style={{ display: 'flex', gap: '16px', width: '100%', marginTop: '16px' }}>
             <div>{avatar}</div>
@@ -53,7 +73,7 @@ const CustomComment = ({ actions, author, avatar, content, datetime, children }:
     );
 };
 
-const CommentNode = ({ comment, docId }: { comment: any; docId: string }) => {
+const CommentNode = ({ comment, docId }: { comment: CommentType; docId: string }) => {
     const [replyVisible, setReplyVisible] = useState(false);
     const [repliesExpanded, setRepliesExpanded] = useState(false);
     const [form] = Form.useForm();
@@ -66,7 +86,7 @@ const CommentNode = ({ comment, docId }: { comment: any; docId: string }) => {
             form.resetFields();
             setReplyVisible(false);
             mutate(`/documents/${docId}/comments`);
-        } catch (error) {
+        } catch (_error) {
             message.error('Failed to send reply.');
         }
     };
@@ -79,7 +99,7 @@ const CommentNode = ({ comment, docId }: { comment: any; docId: string }) => {
                 <Input.TextArea rows={2} placeholder={`Replying to ${authorDisplayName}...`} />
             </Form.Item>
             <Form.Item>
-                <Button htmlType="submit" size="medium" type="primary">Post Reply</Button>
+                <Button htmlType="submit" type="primary">Post Reply</Button>
             </Form.Item>
         </Form>
     );
@@ -91,20 +111,20 @@ const CommentNode = ({ comment, docId }: { comment: any; docId: string }) => {
             author={<a>{authorDisplayName}</a>}
             avatar={<Avatar>{authorDisplayName[0].toUpperCase()}</Avatar>}
             content={<p>{comment.content}</p>}
-            datetime={dayjs(comment.createdOn)}
+            datetime={comment.createdOn}
             actions={[<Button type="link" size="small" style={{ padding: 0 }} key="reply" onClick={() => setReplyVisible(!replyVisible)}>Reply</Button>]}
         >
             {replyVisible && ReplyForm}
 
             {hasReplies && !repliesExpanded && (
                 <Button type="link" onClick={() => setRepliesExpanded(true)} style={{ padding: 0, fontSize: '12px' }}>
-                    View {comment.children.length} {comment.children.length > 1 ? 'replies' : 'reply'}
+                    View {comment.children?.length} {comment.children?.length || 0 > 1 ? 'replies' : 'reply'}
                 </Button>
             )}
 
             {hasReplies && repliesExpanded && (
                 <div style={{ marginTop: '16px', borderLeft: '2px solid #f0f0f0', paddingLeft: '24px' }}>
-                    {comment.children.map((child: any) => (
+                    {comment.children?.map((child: CommentType) => (
                         <CommentNode key={child._id} comment={child} docId={docId} />
                     ))}
                     <Button type="link" onClick={() => setRepliesExpanded(false)} style={{ padding: 0, marginTop: '8px', fontSize: '12px' }}>
@@ -134,7 +154,7 @@ export default function CommentSection({ docId }: { docId: string }) {
             message.success('Comment posted!');
             form.resetFields();
             mutate(`/documents/${docId}/comments`);
-        } catch (error) {
+        } catch (_error) {
             message.error('Failed to post comment.');
         }
     };
@@ -157,14 +177,14 @@ export default function CommentSection({ docId }: { docId: string }) {
                             <Input.TextArea rows={4} placeholder="Write a comment..." />
                         </Form.Item>
                         <Form.Item>
-                            <Button size='large'  htmlType="submit" type="primary">Post Comment</Button>
+                            <Button size='large' htmlType="submit" type="primary">Post Comment</Button>
                         </Form.Item>
                     </Form>
                 </div>
             </div>
 
             <Space direction="vertical" style={{ width: '100%' }}>
-                {displayedCommentTree.map((comment: any) => (
+                {displayedCommentTree.map((comment: CommentType) => (
                     <CommentNode key={comment._id} comment={comment} docId={docId} />
                 ))}
             </Space>

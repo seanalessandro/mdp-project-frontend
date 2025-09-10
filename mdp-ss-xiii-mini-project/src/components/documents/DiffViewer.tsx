@@ -17,7 +17,7 @@ const DiffViewer = ({ diffs }: { diffs: Diff[] | null }) => {
             {diffs.map((part, index) => {
                 const type = part[0];
                 const text = part[1];
-                let style: React.CSSProperties = {};
+                const style: React.CSSProperties = {};
 
                 // Beri warna berdasarkan tipe diff
                 if (type === 1) { // Teks yang ditambahkan

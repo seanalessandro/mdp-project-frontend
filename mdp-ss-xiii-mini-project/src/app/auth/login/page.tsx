@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Form, Input, Button, Spin, message, Divider, Alert } from "antd"; // Added Alert
+import { Form, Input, Button, Spin, message, Divider } from "antd"; // Added Alert
 import { GoogleOutlined } from '@ant-design/icons';
 import { useAuth } from "@/context/AuthContext";
 import PaperIcon from "@/components/PaperIcon";

@@ -1,18 +1,17 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  Modal, Form, Input, Select, Button, Table, Tag, Typography, Card, 
-  Row, Col, Space, message, Switch, Tooltip, Popconfirm
+import {
+  Modal, Form, Input, Select, Button, Table, Tag, Typography, Card,
+  Row, Col, Space, message, Switch, Tooltip
 } from "antd";
-import { 
-  LeftOutlined, EditOutlined, DeleteOutlined, 
+import {
+  LeftOutlined, EditOutlined,
   PlusOutlined, ReloadOutlined, MailOutlined, UserOutlined,
-  ExclamationCircleOutlined
 } from '@ant-design/icons';
-import { 
-  getUsers, getRoles, createUser, updateUser, updateUserRole, 
-  toggleUserStatus, resetUserPassword
+import {
+  getUsers, getRoles, createUser, updateUser, updateUserRole,
+  toggleUserStatus
 } from "@/lib/api";
 
 const { Option } = Select;
@@ -71,8 +70,8 @@ export default function ManageUsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedRole, setSelectedRole] = useState<string>("");
-  const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [selectedRole] = useState<string>("");
+  const [selectedStatus] = useState<string>("");
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -91,17 +90,17 @@ export default function ManageUsersPage() {
     status?: string
   ) => {
     if (loading) return; // Prevent concurrent requests
-    
+
     try {
       setLoading(true);
-      
+
       // Use provided params or current state values
       const currentPage = page ?? pagination.current;
       const currentPageSize = pageSize ?? pagination.pageSize;
       const currentSearch = search ?? searchTerm;
       const currentRole = role ?? selectedRole;
       const currentStatus = status ?? selectedStatus;
-      
+
       const params = {
         page: currentPage,
         limit: currentPageSize,
@@ -109,16 +108,16 @@ export default function ManageUsersPage() {
         role: currentRole || undefined,
         status: currentStatus || undefined,
       };
-      
+
       const response = await getUsers(params);
-      
+
       if (response?.data) {
         console.log('Raw user data from backend:', response.data);
-        
+
         // Ensure each user has required fields for proper key generation
         const validatedUsers = response.data.map((user: BackendUser, index: number): User => {
           console.log(`Processing user ${index}:`, user);
-          
+
           const processedUser: User = {
             _id: user._id || user.id || `temp-id-${index}`, // Try _id first, then id, then temp
             id: user.id || user._id, // Also set id for compatibility
@@ -136,11 +135,11 @@ export default function ManageUsersPage() {
             createdAt: user.createdAt || '',
             updatedAt: user.updatedAt || '',
           };
-          
+
           console.log(`Processed user ${index}:`, processedUser);
           return processedUser;
         });
-        
+
         setUsers(validatedUsers);
         setPagination(prev => ({
           ...prev,
@@ -162,7 +161,7 @@ export default function ManageUsersPage() {
       console.log('Loading roles...');
       const response = await getRoles();
       console.log('Roles response:', response);
-      
+
       // The API returns roles array directly, not wrapped in 'data'
       if (Array.isArray(response)) {
         console.log('Setting roles directly:', response);
@@ -197,9 +196,9 @@ export default function ManageUsersPage() {
           page: 1,
           limit: 10,
         };
-        
+
         const response = await getUsers(params);
-        
+
         if (response?.data) {
           const validatedUsers = response.data.map((user: BackendUser, index: number): User => ({
             _id: user._id || user.id || `temp-id-${index}`, // Try _id first, then id, then temp
@@ -218,7 +217,7 @@ export default function ManageUsersPage() {
             createdAt: user.createdAt || '',
             updatedAt: user.updatedAt || '',
           }));
-          
+
           setUsers(validatedUsers);
           setPagination(prev => ({
             ...prev,
@@ -234,7 +233,7 @@ export default function ManageUsersPage() {
         setLoading(false);
       }
     };
-    
+
     initialLoadUsers();
     loadRoles();
   }, []); // Only run once on mount
@@ -251,7 +250,7 @@ export default function ManageUsersPage() {
           role: selectedRole || undefined,
           status: selectedStatus || undefined,
         };
-        
+
         setLoading(true);
         getUsers(params)
           .then(response => {
@@ -273,7 +272,7 @@ export default function ManageUsersPage() {
                 createdAt: user.createdAt || '',
                 updatedAt: user.updatedAt || '',
               }));
-              
+
               setUsers(validatedUsers);
               setPagination(prev => ({
                 ...prev,
@@ -310,7 +309,7 @@ export default function ManageUsersPage() {
         roleId: values.roleId,
         unitKerja: values.unitKerja,
       });
-      
+
       message.success("User berhasil dibuat!");
       form.resetFields();
       setIsModalVisible(false);
@@ -331,7 +330,7 @@ export default function ManageUsersPage() {
     unitKerja?: string;
   }) => {
     if (!editingUser) return;
-    
+
     try {
       setCreating(true);
       await updateUser(editingUser._id, {
@@ -340,7 +339,7 @@ export default function ManageUsersPage() {
         fullName: values.fullName,
         unitKerja: values.unitKerja,
       });
-      
+
       message.success("User berhasil diupdate!");
       form.resetFields();
       setIsModalVisible(false);
@@ -379,36 +378,36 @@ export default function ManageUsersPage() {
   };
 
   // FR-5.2.2.5: Admin dapat mereset password dan mengirim via email
-  const handleResetPassword = async (userId: string, userEmail: string) => {
-    try {
-      await resetUserPassword(userId);
-      message.success(`Password berhasil direset dan dikirim ke ${userEmail}!`);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      message.error(`Gagal mereset password: ${errorMessage}`);
-    }
-  };
+  // const handleResetPassword = async (userId: string, userEmail: string) => {
+  //   try {
+  //     await resetUserPassword(userId);
+  //     message.success(`Password berhasil direset dan dikirim ke ${userEmail}!`);
+  //   } catch (error: unknown) {
+  //     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+  //     message.error(`Gagal mereset password: ${errorMessage}`);
+  //   }
+  // };
 
   // FR-5.2.2.4: Admin tidak dapat menghapus user, hanya nonaktifkan
-  const handleDeactivateUser = (user: User) => {
-    Modal.confirm({
-      title: 'Konfirmasi Nonaktifkan User',
-      icon: <ExclamationCircleOutlined />,
-      content: (
-        <div>
-          <p>Apakah Anda yakin ingin menonaktifkan user <strong>{user.fullName}</strong>?</p>
-          <p className="text-gray-500 text-sm">
-            Sesuai kebijakan sistem, user tidak dapat dihapus permanent, 
-            hanya dapat dinonaktifkan untuk menjaga integritas data.
-          </p>
-        </div>
-      ),
-      okText: 'Ya, Nonaktifkan',
-      cancelText: 'Batal',
-      okType: 'danger',
-      onOk: () => handleToggleStatus(user._id, user.isActive),
-    });
-  };
+  // const handleDeactivateUser = (user: User) => {
+  //   Modal.confirm({
+  //     title: 'Konfirmasi Nonaktifkan User',
+  //     icon: <ExclamationCircleOutlined />,
+  //     content: (
+  //       <div>
+  //         <p>Apakah Anda yakin ingin menonaktifkan user <strong>{user.fullName}</strong>?</p>
+  //         <p className="text-gray-500 text-sm">
+  //           Sesuai kebijakan sistem, user tidak dapat dihapus permanent,
+  //           hanya dapat dinonaktifkan untuk menjaga integritas data.
+  //         </p>
+  //       </div>
+  //     ),
+  //     okText: 'Ya, Nonaktifkan',
+  //     cancelText: 'Batal',
+  //     okType: 'danger',
+  //     onOk: () => handleToggleStatus(user._id, user.isActive),
+  //   });
+  // };
 
   const showCreateModal = () => {
     setEditingUser(null);
@@ -445,7 +444,7 @@ export default function ManageUsersPage() {
     {
       title: 'No',
       key: 'no',
-      render: (_: unknown, __: unknown, index: number) => 
+      render: (_: unknown, __: unknown, index: number) =>
         (pagination.current - 1) * pagination.pageSize + index + 1,
       width: 60,
     },
@@ -581,7 +580,7 @@ export default function ManageUsersPage() {
                 allowClear
               />
             </Col>
-            
+
             <Col xs={24} sm={12} md={8}>
               <Space style={{ float: 'right' }}>
                 <Button
@@ -591,7 +590,7 @@ export default function ManageUsersPage() {
                 >
                   Refresh
                 </Button>
-                
+
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
@@ -613,13 +612,13 @@ export default function ManageUsersPage() {
               ...pagination,
               showSizeChanger: true,
               showQuickJumper: true,
-              showTotal: (total, range) => 
+              showTotal: (total, range) =>
                 `${range[0]}-${range[1]} dari ${total} user`,
             }}
             onChange={handleTableChange}
             scroll={{ x: 1200 }}
-            locale={{ 
-              emptyText: searchTerm ? "Tidak ada user yang ditemukan" : "Belum ada user" 
+            locale={{
+              emptyText: searchTerm ? "Tidak ada user yang ditemukan" : "Belum ada user"
             }}
           />
         </Card>
@@ -650,7 +649,7 @@ export default function ManageUsersPage() {
                   <Input placeholder="Masukkan username" />
                 </Form.Item>
               </Col>
-              
+
               <Col span={12}>
                 <Form.Item
                   label="Email"
@@ -691,7 +690,7 @@ export default function ManageUsersPage() {
                   </Form.Item>
                 )}
               </Col>
-              
+
               <Col span={editingUser ? 24 : 12}>
                 <Form.Item
                   label="Unit Kerja"

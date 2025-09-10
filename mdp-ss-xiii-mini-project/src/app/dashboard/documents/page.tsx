@@ -26,19 +26,25 @@ export default function DocumentsPage() {
     const [statusFilter, setStatusFilter] = useState('All');
 
     // 🔎 state untuk column search
-    const [searchText, setSearchText] = useState('');
+    // Catatan: state ini dihapus karena tidak digunakan lagi dan menyebabkan error
+    // const [searchText, setSearchText] = useState('');
     const [searchedColumn, setSearchedColumn] = useState('');
     const searchInput = useRef<InputRef>(null);
 
     const handleSearch = (selectedKeys: string[], confirm: (param?: FilterConfirmProps) => void, dataIndex: string) => {
         confirm();
-        setSearchText(selectedKeys[0]);
+        // ❌ Error: setSearchText tidak ditemukan, ganti dengan setSearchTerm jika diperlukan untuk global search
+        // Jika tidak, baris ini bisa dihapus karena search per kolom sudah otomatis
+        // setSearchText(selectedKeys[0]); 
         setSearchedColumn(dataIndex);
     };
 
     const handleReset = (clearFilters?: () => void) => {
-        clearFilters && clearFilters();
-        setSearchText('');
+        if (clearFilters) {
+            clearFilters();
+        }
+        // ❌ Error: setSearchText tidak ditemukan, ganti dengan setSearchTerm jika ingin mereset global search
+        // setSearchText('');
     };
 
     // helper search per kolom
@@ -72,6 +78,7 @@ export default function DocumentsPage() {
         filterIcon: (filtered: boolean) => (
             <SearchOutlined style={{ color: filtered ? '#1677ff' : undefined }} />
         ),
+        // ✅ Perbaikan tipe: 'value' harus string | number | boolean
         onFilter: (value, record) =>
             record[dataIndex]
                 ? String(record[dataIndex]).toLowerCase().includes((value as string).toLowerCase())
@@ -109,8 +116,12 @@ export default function DocumentsPage() {
             message.success("Dokumen baru berhasil dibuat!");
             mutateDocuments();
             router.push(`/dashboard/documents/${newDoc.id}`);
-        } catch (err: any) {
-            message.error(err.message || "Gagal membuat dokumen");
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                message.error(err.message || "Gagal membuat dokumen");
+            } else {
+                message.error("Gagal membuat dokumen");
+            }
         } finally {
             setIsProcessing(false);
         }
@@ -121,8 +132,12 @@ export default function DocumentsPage() {
             await api.deleteDocument(docId);
             message.success("Dokumen berhasil dihapus!");
             mutateDocuments();
-        } catch (err: any) {
-            message.error(err.message || "Gagal menghapus dokumen");
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                message.error(err.message || "Gagal menghapus dokumen");
+            } else {
+                message.error("Gagal menghapus dokumen");
+            }
         }
     };
 
@@ -131,21 +146,25 @@ export default function DocumentsPage() {
         try {
             const response = await api.checkDocumentCodaStatus(docId);
             const { data } = response;
-            
+
             if (data.completed) {
                 message.success(`Sync berhasil! Status: ${data.syncStatus}`);
             } else {
                 message.info(`Sync masih dalam proses... Status: ${data.syncStatus}`);
             }
-            
+
             if (data.warning) {
                 message.warning(`Warning: ${data.warning}`);
             }
-            
+
             // Refresh documents to get updated sync status
             mutateDocuments();
-        } catch (err: any) {
-            message.error(err.message || "Gagal memeriksa status sync");
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                message.error(err.message || "Gagal memeriksa status sync");
+            } else {
+                message.error("Gagal memeriksa status sync");
+            }
         } finally {
             setSyncingDocuments(prev => {
                 const newSet = new Set(prev);
@@ -160,17 +179,21 @@ export default function DocumentsPage() {
         try {
             const response = await api.fetchDocumentDevelopmentStatus(docId);
             const { data } = response;
-            
+
             if (data.codaDevelopmentStatus) {
                 message.success(`Development status fetched: ${data.codaDevelopmentStatus}`);
             } else {
                 message.info("Development status not available");
             }
-            
+
             // Refresh documents to get updated development status
             mutateDocuments();
-        } catch (err: any) {
-            message.error(err.message || "Gagal mengambil development status");
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                message.error(err.message || "Gagal mengambil development status");
+            } else {
+                message.error("Gagal mengambil development status");
+            }
         } finally {
             setFetchingDevStatus(prev => {
                 const newSet = new Set(prev);
@@ -180,12 +203,12 @@ export default function DocumentsPage() {
         }
     };
 
-    const columns = [
+    const columns: ColumnType<Document>[] = [
         {
             title: 'DOCUMENT NO',
             dataIndex: 'docNo',
             key: 'docNo',
-            sorter: (a: Document, b: Document) => a.docNo.localeCompare(b.docNo),
+            sorter: (a, b) => a.docNo.localeCompare(b.docNo),
             ...getColumnSearchProps('docNo'),
         },
         {
@@ -204,7 +227,8 @@ export default function DocumentsPage() {
                 { text: 'Approved', value: 'Approved' },
                 { text: 'Implemented', value: 'Implemented' },
             ],
-            onFilter: (value: any, record: Document) => record.status === value,
+            // ✅ Perbaikan tipe 'value' dan 'record'
+            onFilter: (value, record) => record.status === value,
             render: (status: string) => {
                 let color = 'default';
                 if (status === 'In Review') color = 'blue';
@@ -222,7 +246,8 @@ export default function DocumentsPage() {
                 { text: 'Medium', value: 'Medium' },
                 { text: 'Low', value: 'Low' },
             ],
-            onFilter: (value: any, record: Document) => record.priority === value,
+            // ✅ Perbaikan tipe 'value'
+            onFilter: (value, record) => record.priority === value,
             render: (priority: string) => {
                 const color = priority === 'High' ? 'red' : priority === 'Medium' ? 'orange' : 'green';
                 return <Tag color={color}>{priority}</Tag>;
@@ -232,22 +257,21 @@ export default function DocumentsPage() {
             title: 'VERSI',
             dataIndex: 'version',
             key: 'version',
-            sorter: (a: Document, b: Document) => (a.version ?? 1) - (b.version ?? 1),
+            sorter: (a, b) => (a.version ?? 1) - (b.version ?? 1),
             render: (version: number) => version ? version.toFixed(1) : '1.0'
         },
         {
             title: 'SYNC STATUS',
             key: 'syncStatus',
             render: (record: Document) => {
-                // Check if document has Coda sync information
                 if (!record.codaRequestId && !record.codaSyncStatus) {
                     return <Tag color="default">Not Synced</Tag>;
                 }
-                
+
                 const status = record.codaSyncStatus || 'pending';
                 let color = 'default';
                 let icon = null;
-                
+
                 switch (status) {
                     case 'completed':
                         color = 'green';
@@ -262,7 +286,7 @@ export default function DocumentsPage() {
                         icon = <ExclamationCircleOutlined />;
                         break;
                 }
-                
+
                 return (
                     <Tag color={color} icon={icon}>
                         {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -277,8 +301,7 @@ export default function DocumentsPage() {
                 if (!record.codaDevelopmentStatus) {
                     return <Tag color="default">-</Tag>;
                 }
-                
-                // Color based on development status
+
                 let color = 'default';
                 switch (record.codaDevelopmentStatus.toLowerCase()) {
                     case 'completed':
@@ -296,7 +319,7 @@ export default function DocumentsPage() {
                     default:
                         color = 'purple';
                 }
-                
+
                 return <Tag color={color}>{record.codaDevelopmentStatus}</Tag>;
             }
         },
@@ -306,12 +329,12 @@ export default function DocumentsPage() {
             render: (record: Document) => (
                 <Space>
                     <Tooltip title="Edit Document">
-                        <Button 
-                            icon={<EditOutlined />} 
-                            onClick={(e) => { 
-                                e.stopPropagation(); 
-                                router.push(`/dashboard/documents/${record.id}`); 
-                            }} 
+                        <Button
+                            icon={<EditOutlined />}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/dashboard/documents/${record.id}`);
+                            }}
                         />
                     </Tooltip>
                     {record.codaRequestId && (
@@ -367,7 +390,6 @@ export default function DocumentsPage() {
                 </Button>
             </Row>
 
-            {/* 🔎 Search utama */}
             <Row justify="space-between" gutter={16}>
                 <Col flex="auto">
                     <Input.Search
@@ -392,7 +414,7 @@ export default function DocumentsPage() {
             <Card bordered={false}>
                 <Table
                     columns={columns}
-                    dataSource={filteredDocuments} // hasil global filter
+                    dataSource={filteredDocuments}
                     loading={isLoadingDocs}
                     rowKey="id"
                     onRow={(record) => ({
