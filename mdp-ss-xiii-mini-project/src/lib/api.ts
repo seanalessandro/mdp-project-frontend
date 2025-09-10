@@ -160,6 +160,10 @@ export const rejectDocument = (id: string, comments: string) => fetchApi(`/docum
 
 export const getDocumentApprovalStatus = (id: string) => fetchApi(`/documents/${id}/approval-status`);
 
+export const checkDocumentCodaStatus = (id: string) => fetchApi(`/documents/${id}/coda-status`);
+
+export const fetchDocumentDevelopmentStatus = (id: string) => fetchApi(`/documents/${id}/coda-dev-status`);
+
 export const getPendingDocumentsForApproval = (role: string) => fetchApi(`/approval/${role.toLowerCase()}/pending`);
 export const updateDocumentStatus = (id: string, status: string) => fetchApi(`/documents/${id}/status`, {
   method: 'PATCH',

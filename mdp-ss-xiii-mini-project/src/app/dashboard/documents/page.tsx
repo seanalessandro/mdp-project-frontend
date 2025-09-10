@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import { Button, Table, Space, Typography, Popconfirm, message, Input, Row, Select, Tag, Tooltip, Col, Card } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, CheckCircleOutlined, ExclamationCircleOutlined, CodeOutlined } from '@ant-design/icons';
 import type { InputRef } from 'antd';
 import type { ColumnType } from 'antd/es/table';
 import type { FilterConfirmProps } from 'antd/es/table/interface';
@@ -98,6 +98,8 @@ export default function DocumentsPage() {
             (statusFilter === 'All' || doc.status === statusFilter)
         );
     }, [documents, searchTerm, statusFilter]);
+    const [syncingDocuments, setSyncingDocuments] = useState<Set<string>>(new Set());
+    const [fetchingDevStatus, setFetchingDevStatus] = useState<Set<string>>(new Set());
 
     const handleTemplateSelect = async (templateId: string) => {
         setIsProcessing(true);
@@ -121,6 +123,60 @@ export default function DocumentsPage() {
             mutateDocuments();
         } catch (err: any) {
             message.error(err.message || "Gagal menghapus dokumen");
+        }
+    };
+
+    const handleCheckCodaStatus = async (docId: string) => {
+        setSyncingDocuments(prev => new Set(prev).add(docId));
+        try {
+            const response = await api.checkDocumentCodaStatus(docId);
+            const { data } = response;
+            
+            if (data.completed) {
+                message.success(`Sync berhasil! Status: ${data.syncStatus}`);
+            } else {
+                message.info(`Sync masih dalam proses... Status: ${data.syncStatus}`);
+            }
+            
+            if (data.warning) {
+                message.warning(`Warning: ${data.warning}`);
+            }
+            
+            // Refresh documents to get updated sync status
+            mutateDocuments();
+        } catch (err: any) {
+            message.error(err.message || "Gagal memeriksa status sync");
+        } finally {
+            setSyncingDocuments(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(docId);
+                return newSet;
+            });
+        }
+    };
+
+    const handleFetchDevelopmentStatus = async (docId: string) => {
+        setFetchingDevStatus(prev => new Set(prev).add(docId));
+        try {
+            const response = await api.fetchDocumentDevelopmentStatus(docId);
+            const { data } = response;
+            
+            if (data.codaDevelopmentStatus) {
+                message.success(`Development status fetched: ${data.codaDevelopmentStatus}`);
+            } else {
+                message.info("Development status not available");
+            }
+            
+            // Refresh documents to get updated development status
+            mutateDocuments();
+        } catch (err: any) {
+            message.error(err.message || "Gagal mengambil development status");
+        } finally {
+            setFetchingDevStatus(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(docId);
+                return newSet;
+            });
         }
     };
 
@@ -180,16 +236,108 @@ export default function DocumentsPage() {
             render: (version: number) => version ? version.toFixed(1) : '1.0'
         },
         {
+            title: 'SYNC STATUS',
+            key: 'syncStatus',
+            render: (record: Document) => {
+                // Check if document has Coda sync information
+                if (!record.codaRequestId && !record.codaSyncStatus) {
+                    return <Tag color="default">Not Synced</Tag>;
+                }
+                
+                const status = record.codaSyncStatus || 'pending';
+                let color = 'default';
+                let icon = null;
+                
+                switch (status) {
+                    case 'completed':
+                        color = 'green';
+                        icon = <CheckCircleOutlined />;
+                        break;
+                    case 'pending':
+                        color = 'blue';
+                        icon = <SyncOutlined spin />;
+                        break;
+                    case 'failed':
+                        color = 'red';
+                        icon = <ExclamationCircleOutlined />;
+                        break;
+                }
+                
+                return (
+                    <Tag color={color} icon={icon}>
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </Tag>
+                );
+            }
+        },
+        {
+            title: 'DEV STATUS',
+            key: 'devStatus',
+            render: (record: Document) => {
+                if (!record.codaDevelopmentStatus) {
+                    return <Tag color="default">-</Tag>;
+                }
+                
+                // Color based on development status
+                let color = 'default';
+                switch (record.codaDevelopmentStatus.toLowerCase()) {
+                    case 'completed':
+                    case 'done':
+                        color = 'green';
+                        break;
+                    case 'in progress':
+                    case 'development':
+                        color = 'blue';
+                        break;
+                    case 'pending':
+                    case 'todo':
+                        color = 'orange';
+                        break;
+                    default:
+                        color = 'purple';
+                }
+                
+                return <Tag color={color}>{record.codaDevelopmentStatus}</Tag>;
+            }
+        },
+        {
             title: 'AKSI',
             key: 'action',
-            render: (_: any, record: Document) => (
+            render: (record: Document) => (
                 <Space>
                     <Tooltip title="Edit Document">
-                        <Button
-                            icon={<EditOutlined />}
-                            onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/documents/${record.id}`); }}
+                        <Button 
+                            icon={<EditOutlined />} 
+                            onClick={(e) => { 
+                                e.stopPropagation(); 
+                                router.push(`/dashboard/documents/${record.id}`); 
+                            }} 
                         />
                     </Tooltip>
+                    {record.codaRequestId && (
+                        <Tooltip title="Check Sync Status">
+                            <Button
+                                icon={<SyncOutlined />}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCheckCodaStatus(record.id);
+                                }}
+                                loading={syncingDocuments.has(record.id)}
+                            />
+                        </Tooltip>
+                    )}
+                    {record.codaSyncStatus === 'completed' && record.codaRowId && (
+                        <Tooltip title="Fetch Development Status">
+                            <Button
+                                icon={<CodeOutlined />}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleFetchDevelopmentStatus(record.id);
+                                }}
+                                loading={fetchingDevStatus.has(record.id)}
+                            />
+                        </Tooltip>
+                    )}
                     <Popconfirm
                         title="Hapus Dokumen"
                         description="Apakah Anda yakin ingin menghapus dokumen ini?"

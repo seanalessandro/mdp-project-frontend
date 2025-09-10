@@ -259,6 +259,16 @@ export default function EditorClient({ documentData, docId }: { documentData: an
                                     >
                                         <Button icon={<BranchesOutlined />}>Update Version</Button>
                                     </Popconfirm>
+                                    <Tag 
+                                        color={
+                                            status === 'Draft' ? 'default' : 
+                                            status === 'Rejected' ? 'red' : 
+                                            status === 'Final Approved' ? 'green' : 
+                                            'blue'
+                                        }
+                                    >
+                                        {status}
+                                    </Tag>
                                     <Select value={priority} onChange={handlePriorityChange} style={{ width: 120 }}>
                                         <Option value="High">High</Option>
                                         <Option value="Medium">Medium</Option>
@@ -289,13 +299,15 @@ export default function EditorClient({ documentData, docId }: { documentData: an
                                             Export PDF
                                         </Button>
                                     </Dropdown>
-
-
-
-
-                                    {status === 'Draft' && (
-                                        <Popconfirm title="Submit for Review" onConfirm={() => handleSetStatus('In Review')} okText="Yes, Submit" cancelText="No">
-                                            <Button>Ready for Review</Button>
+                                    
+                                    {(status === 'Draft' || status === 'Rejected') && (
+                                        <Popconfirm 
+                                            title={status === 'Rejected' ? "Resubmit for Review" : "Submit for Review"} 
+                                            onConfirm={() => handleSetStatus('In Review')} 
+                                            okText="Yes, Submit" 
+                                            cancelText="No"
+                                        >
+                                            <Button>{status === 'Rejected' ? 'Resubmit for Review' : 'Ready for Review'}</Button>
                                         </Popconfirm>
                                     )}
                                     <Button onClick={() => router.push('/dashboard/documents')}>Kembali</Button>

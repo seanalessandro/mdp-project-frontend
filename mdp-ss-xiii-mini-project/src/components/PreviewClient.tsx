@@ -116,7 +116,10 @@ export default function PreviewClient({ documentData, docId }: { documentData: a
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '12px' }}>
                     <Space>
-                        <Tag color={status === 'In Review' ? 'blue' : 'default'} style={{ borderRadius: '16px', padding: '4px 24px' }}>
+                        <Tag 
+                            color={status === 'In Review' ? 'blue' : status === 'Rejected' ? 'red' : status === 'Final Approved' ? 'green' : 'default'} 
+                            style={{ borderRadius: '16px', padding: '4px 24px' }}
+                        >
                             {status}
                         </Tag>
                         <Button icon={<BranchesOutlined />} shape="round" onClick={() => router.push(`/dashboard/documents/${docId}/history`)}
@@ -124,16 +127,16 @@ export default function PreviewClient({ documentData, docId }: { documentData: a
                             v{documentData.version?.toFixed(1)}
                         </Button>
                     </Space>
-                    {status === 'Draft' && (
+                    {(status === 'Draft' || status === 'Rejected') && (
                         <Popconfirm
-                            title="Ajukan untuk Review"
-                            description="Apakah Anda yakin ingin mengajukan dokumen ini?"
+                            title={status === 'Rejected' ? "Ajukan Ulang untuk Review" : "Ajukan untuk Review"}
+                            description={status === 'Rejected' ? "Apakah Anda yakin ingin mengajukan ulang dokumen ini?" : "Apakah Anda yakin ingin mengajukan dokumen ini?"}
                             onConfirm={() => handleSetStatus('In Review')}
                             okText="Ya, Ajukan"
                             cancelText="Batal"
                         >
                             <Button type="primary" style={{ padding: '24px 48px' }} icon={<CheckCircleOutlined />} size="large">
-                                Ajukan Review
+                                {status === 'Rejected' ? 'Ajukan Ulang Review' : 'Ajukan Review'}
                             </Button>
                         </Popconfirm>
                     )}

@@ -65,6 +65,13 @@ export interface Document extends BaseModel {
   priority: 'High' | 'Medium' | 'Low';
   currentApprovalLevel: number;
   approvals: ApprovalLevel[];
+  // Coda sync fields
+  codaRequestId?: string;
+  codaSyncStatus?: 'pending' | 'completed' | 'failed';
+  codaLastSyncAt?: string;
+  codaSyncError?: string;
+  codaRowId?: string; // Single Coda row ID that was added
+  codaDevelopmentStatus?: string; // Development status from Coda
 }
 
 export interface ApprovalLevel {
