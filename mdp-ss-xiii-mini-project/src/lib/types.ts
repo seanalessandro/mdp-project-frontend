@@ -33,8 +33,22 @@ export interface User extends BaseModel {
 // Tipe untuk respons login lengkap
 export interface LoginResponse {
   token: string;
+  refreshToken: string;
   user: User;
   role: Role;
+}
+
+// Tipe untuk respons refresh token
+export interface TokenResponse {
+  token: string;
+  refreshToken: string;
+  user: User;
+  role: Role;
+}
+
+// Tipe untuk request refresh token
+export interface RefreshTokenRequest {
+  refreshToken: string;
 }
 
 // Tipe untuk body request
@@ -165,6 +179,11 @@ export interface MenuType extends BaseModel {
   icon: string;
   isActive: boolean;
   parentId?: string;
+}
+
+// Tipe untuk Menu dengan children (hierarchical)
+export interface MenuWithChildren extends MenuType {
+  children?: MenuWithChildren[];
 }
 
 export interface RoleMenuMapping extends BaseModel {

@@ -1,7 +1,65 @@
-import { LoginRequest, RoleRequest, MenuType, RoleMenuMappingRequest, ApprovalHistoryEntry } from "./types";
+import { LoginRequest, RoleRequest, MenuType, RoleMenuMappingRequest, ApprovalHistoryEntry, TokenResponse, RefreshTokenRequest } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3033/api';
 import { CreateCommentPayload } from './types';
+
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve(token!);
+    }
+  });
+  
+  failedQueue = [];
+};
+
+async function refreshAccessToken(): Promise<string> {
+  // Ensure we're in browser environment
+  if (typeof window === 'undefined') {
+    throw new Error('Cannot refresh token in server environment');
+  }
+  
+  const refreshToken = localStorage.getItem('refreshToken');
+  
+  if (!refreshToken) {
+    throw new Error('No refresh token available');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!response.ok) {
+    // Clear invalid tokens
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('role');
+    throw new Error('Failed to refresh token');
+  }
+
+  const data: TokenResponse = await response.json();
+  
+  // Update stored tokens
+  localStorage.setItem('token', data.token);
+  localStorage.setItem('refreshToken', data.refreshToken);
+  localStorage.setItem('user', JSON.stringify(data.user));
+  localStorage.setItem('role', JSON.stringify(data.role));
+  
+  return data.token;
+}
 
 async function fetchApi(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -18,7 +76,50 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers, body });
+  let response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers, body });
+
+  // Handle token expiration
+  if (response.status === 401 && token) {
+    const errorData = await response.json().catch(() => ({}));
+    
+    if (errorData.code === 'TOKEN_EXPIRED') {
+      if (isRefreshing) {
+        // If already refreshing, wait for it to complete
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then((newToken) => {
+          headers['Authorization'] = `Bearer ${newToken}`;
+          return fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers, body });
+        });
+      }
+
+      isRefreshing = true;
+
+      try {
+        const newToken = await refreshAccessToken();
+        processQueue(null, newToken);
+        
+        // Retry the original request with new token
+        headers['Authorization'] = `Bearer ${newToken}`;
+        response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers, body });
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        
+        // Clear tokens and redirect to login
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('user');
+          localStorage.removeItem('role');
+          window.location.href = '/auth/login';
+        }
+        
+        throw refreshError;
+      } finally {
+        isRefreshing = false;
+      }
+    }
+  }
 
   if (response.status === 204) {
     return;
@@ -45,6 +146,10 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
 export const loginUser = (credentials: LoginRequest) => fetchApi('/auth/login', {
   method: 'POST',
   body: JSON.stringify(credentials),
+});
+export const refreshToken = (refreshTokenData: RefreshTokenRequest) => fetchApi('/auth/refresh', {
+  method: 'POST',
+  body: JSON.stringify(refreshTokenData),
 });
 export const getProfile = () => fetchApi('/profile');
 export const logoutUser = () => fetchApi('/logout', { method: 'POST' });
@@ -243,6 +348,9 @@ export const createRoleMenuMapping = (data: RoleMenuMappingRequest) => fetchApi(
 });
 
 export const getRoleMenuMappings = () => fetchApi('/admin/role-menu-mappings');
+
+// Get menus for current user's role
+export const getUserMenus = () => fetchApi('/user/menus');
 
 export const getRoleMenuMapping = (id: string) => fetchApi(`/admin/role-menu-mappings/${id}`);
 

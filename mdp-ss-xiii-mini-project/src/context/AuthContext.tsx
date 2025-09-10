@@ -28,10 +28,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
+    const storedRefreshToken = localStorage.getItem('refreshToken');
     const storedUser = localStorage.getItem('user');
     const storedRole = localStorage.getItem('role');
 
-    if (storedToken && storedUser && storedRole) {
+    if (storedToken && storedRefreshToken && storedUser && storedRole) {
       setUser(JSON.parse(storedUser));
       setRole(JSON.parse(storedRole));
     }
@@ -48,6 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('user', JSON.stringify(response.user));
       localStorage.setItem('role', JSON.stringify(response.role));
       localStorage.setItem('token', response.token);
+      localStorage.setItem('refreshToken', response.refreshToken);
       
       // FR-5.2.3.2: Sistem mengarahkan user ke halaman dashboard spesifik sesuai role
       const targetRoute = getRoleBasedRoute(response.role);
@@ -70,6 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem('user');
       localStorage.removeItem('role');
       localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
       router.push('/auth/login');
     }
   };
@@ -78,7 +81,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (isLoading) return;
     
     const isAuthPage = pathname.startsWith('/auth');
-    const isAuthenticated = !!localStorage.getItem('token');
+    const isAuthenticated = !!localStorage.getItem('token') && !!localStorage.getItem('refreshToken');
     const storedRole = localStorage.getItem('role');
     const currentRole = storedRole ? JSON.parse(storedRole) : null;
 

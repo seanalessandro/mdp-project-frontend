@@ -2,6 +2,7 @@
 import React from 'react';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import { AuthProvider } from '@/context/AuthContext';
+import { TokenRefreshProvider } from '@/components/TokenRefreshProvider';
 import { App } from 'antd'; // <-- 1. Import komponen App
 import './globals.css';
 import type { Metadata } from 'next';
@@ -18,12 +19,12 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => (
     <body>
       <AntdRegistry>
         <App>
-
           <AuthProvider>
-            {children}
+            <TokenRefreshProvider>
+              {children}
+            </TokenRefreshProvider>
           </AuthProvider>
         </App>
-
       </AntdRegistry>
     </body>
   </html>

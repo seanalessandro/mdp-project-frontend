@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Layout } from 'antd';
-import AppSidebar from '../../components/layout/AppSidebar';
+import DynamicSidebar from '../../components/layout/DynamicSidebar';
 import AppHeader from '../../components/layout/AppHeader';
 // import '../editor.css';
 
@@ -11,7 +11,7 @@ const { Content } = Layout;
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     return (
         <Layout style={{ minHeight: '100vh' }}>
-            <AppSidebar />
+            <DynamicSidebar />
             <Layout>
                 <AppHeader />
                 <Content style={{ margin: '24px 16px 0' }}>
