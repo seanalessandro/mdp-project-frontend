@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import { Button, Table, Space, Typography, Popconfirm, message, Input, Row, Select, Tag, Tooltip, Col, Card } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, CheckCircleOutlined, ExclamationCircleOutlined, CodeOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, SyncOutlined, CheckCircleOutlined, ExclamationCircleOutlined, CodeOutlined, RedoOutlined } from '@ant-design/icons';
 import type { InputRef } from 'antd';
 import type { ColumnType } from 'antd/es/table';
 import type { FilterConfirmProps } from 'antd/es/table/interface';
@@ -12,11 +12,16 @@ import * as api from '@/lib/api';
 import { Document } from '@/lib/types';
 import CreateDocumentModal from '@/components/documents/CreateDocumentModal';
 
+interface ExtendedDocument extends Document {
+    ownerUsername?: string;
+    ownerEmail?: string;
+}
+
 const { Option } = Select;
 
 export default function DocumentsPage() {
     const router = useRouter();
-    const { data: documents, error: docError, mutate: mutateDocuments, isLoading: isLoadingDocs } = useSWR('/documents', api.getMyDocuments);
+    const { data: documents, error: docError, mutate: mutateDocuments, isLoading: isLoadingDocs } = useSWR('/documents/all', api.getAllDocuments);
 
     const [isTemplateModalVisible, setIsTemplateModalVisible] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -48,7 +53,7 @@ export default function DocumentsPage() {
     };
 
     // helper search per kolom
-    const getColumnSearchProps = (dataIndex: keyof Document): ColumnType<Document> => ({
+    const getColumnSearchProps = (dataIndex: keyof ExtendedDocument): ColumnType<ExtendedDocument> => ({
         filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
             <div style={{ padding: 8 }}>
                 <Input
@@ -99,7 +104,7 @@ export default function DocumentsPage() {
     // 🔎 Global filtering (berdasarkan search utama + status)
     const filteredDocuments = useMemo(() => {
         if (!documents) return [];
-        return documents.filter((doc: Document) =>
+        return documents.filter((doc: ExtendedDocument) =>
             (doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 doc.docNo.toLowerCase().includes(searchTerm.toLowerCase())) &&
             (statusFilter === 'All' || doc.status === statusFilter)
@@ -107,6 +112,7 @@ export default function DocumentsPage() {
     }, [documents, searchTerm, statusFilter]);
     const [syncingDocuments, setSyncingDocuments] = useState<Set<string>>(new Set());
     const [fetchingDevStatus, setFetchingDevStatus] = useState<Set<string>>(new Set());
+    const [retryingSync, setRetryingSync] = useState<Set<string>>(new Set());
 
     const handleTemplateSelect = async (templateId: string) => {
         setIsProcessing(true);
@@ -203,7 +209,32 @@ export default function DocumentsPage() {
         }
     };
 
-    const columns: ColumnType<Document>[] = [
+    const handleRetryCodaSync = async (docId: string) => {
+        setRetryingSync(prev => new Set(prev).add(docId));
+        try {
+            const response = await api.retryCodaSync(docId);
+            const { data } = response;
+
+            message.success(`Sync retry initiated: ${data.message}`);
+
+            // Refresh documents to get updated sync status
+            mutateDocuments();
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                message.error(err.message || "Gagal melakukan retry sync");
+            } else {
+                message.error("Gagal melakukan retry sync");
+            }
+        } finally {
+            setRetryingSync(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(docId);
+                return newSet;
+            });
+        }
+    };
+
+    const columns: ColumnType<ExtendedDocument>[] = [
         {
             title: 'DOCUMENT NO',
             dataIndex: 'docNo',
@@ -216,6 +247,18 @@ export default function DocumentsPage() {
             dataIndex: 'title',
             key: 'title',
             ...getColumnSearchProps('title'),
+        },
+        {
+            title: 'PEMBUAT',
+            dataIndex: 'ownerUsername',
+            key: 'ownerUsername',
+            render: (ownerUsername: string, record: ExtendedDocument) => (
+                <div>
+                    <div style={{ fontWeight: 'bold' }}>{ownerUsername || 'Unknown'}</div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>{record.ownerEmail || ''}</div>
+                </div>
+            ),
+            ...getColumnSearchProps('ownerUsername'),
         },
         {
             title: 'STATUS',
@@ -263,7 +306,7 @@ export default function DocumentsPage() {
         {
             title: 'SYNC STATUS',
             key: 'syncStatus',
-            render: (record: Document) => {
+            render: (record: ExtendedDocument) => {
                 if (!record.codaRequestId && !record.codaSyncStatus) {
                     return <Tag color="default">Not Synced</Tag>;
                 }
@@ -297,7 +340,7 @@ export default function DocumentsPage() {
         {
             title: 'DEV STATUS',
             key: 'devStatus',
-            render: (record: Document) => {
+            render: (record: ExtendedDocument) => {
                 if (!record.codaDevelopmentStatus) {
                     return <Tag color="default">-</Tag>;
                 }
@@ -326,7 +369,7 @@ export default function DocumentsPage() {
         {
             title: 'AKSI',
             key: 'action',
-            render: (record: Document) => (
+            render: (record: ExtendedDocument) => (
                 <Space>
                     <Tooltip title="Edit Document">
                         <Button
@@ -346,6 +389,20 @@ export default function DocumentsPage() {
                                     handleCheckCodaStatus(record.id);
                                 }}
                                 loading={syncingDocuments.has(record.id)}
+                            />
+                        </Tooltip>
+                    )}
+                    {record.codaSyncStatus === 'failed' && (
+                        <Tooltip title="Retry Coda Sync">
+                            <Button
+                                icon={<RedoOutlined />}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRetryCodaSync(record.id);
+                                }}
+                                loading={retryingSync.has(record.id)}
+                                type="default"
+                                danger
                             />
                         </Tooltip>
                     )}
@@ -383,7 +440,7 @@ export default function DocumentsPage() {
             <Row justify="space-between" align="middle">
                 <div>
                     <Typography.Title level={2} style={{ margin: 0 }}>Dashboard Requirement</Typography.Title>
-                    <Typography.Text type="secondary">Anda login sebagai: 1st Layer Support. Membuat & Mengajukan Requirement</Typography.Text>
+                    {/* <Typography.Text type="secondary">Anda login sebagai: 1st Layer Support. Membuat & Mengajukan Requirement</Typography.Text> */}
                 </div>
                 <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => setIsTemplateModalVisible(true)} loading={isProcessing}>
                     Buat Requirement
@@ -405,8 +462,7 @@ export default function DocumentsPage() {
                         <Option value="All">All Status</Option>
                         <Option value="Draft">Draft</Option>
                         <Option value="In Review">In Review</Option>
-                        <Option value="Approved">Approved</Option>
-                        <Option value="Implemented">Implemented</Option>
+                        <Option value="Final Approved">Final Approved</Option>
                     </Select>
                 </Col>
             </Row>

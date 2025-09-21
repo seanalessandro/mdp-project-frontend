@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Modal, Form, Input, Select, Button, Table, Tag, Typography, Card,
+  Form, Input, Select, Button, Table, Tag, Typography, Card,
   Row, Col, Space, message, Switch, Tooltip
 } from "antd";
 import {
@@ -68,7 +68,6 @@ export default function ManageUsersPage() {
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole] = useState<string>("");
   const [selectedStatus] = useState<string>("");
@@ -242,6 +241,9 @@ export default function ManageUsersPage() {
   useEffect(() => {
     if (searchTerm !== "" || selectedRole !== "" || selectedStatus !== "") {
       const timeoutId = setTimeout(() => {
+        // Reset to page 1 when searching/filtering
+        setPagination(prev => ({ ...prev, current: 1 }));
+        
         // Create params for filtered search
         const params = {
           page: 1, // Reset to page 1
@@ -290,7 +292,7 @@ export default function ManageUsersPage() {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [searchTerm, selectedRole, selectedStatus, pagination.pageSize]); // Direct dependencies
+  }, [searchTerm, selectedRole, selectedStatus, pagination.pageSize]); // Include pagination.pageSize but handle it in the effect
 
   // FR-5.2.2.1: Admin dapat membuat akun user baru
   const handleCreateUser = async (values: {
@@ -312,7 +314,7 @@ export default function ManageUsersPage() {
 
       message.success("User berhasil dibuat!");
       form.resetFields();
-      setIsModalVisible(false);
+      setEditingUser(null);
       loadUsers();
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -342,7 +344,6 @@ export default function ManageUsersPage() {
 
       message.success("User berhasil diupdate!");
       form.resetFields();
-      setIsModalVisible(false);
       setEditingUser(null);
       loadUsers();
     } catch (error: unknown) {
@@ -409,13 +410,12 @@ export default function ManageUsersPage() {
   //   });
   // };
 
-  const showCreateModal = () => {
+  const showCreateForm = () => {
     setEditingUser(null);
     form.resetFields();
-    setIsModalVisible(true);
   };
 
-  const showEditModal = (user: User) => {
+  const showEditForm = (user: User) => {
     setEditingUser(user);
     form.setFieldsValue({
       username: user.username,
@@ -423,21 +423,32 @@ export default function ManageUsersPage() {
       fullName: user.fullName,
       unitKerja: user.unitKerja,
     });
-    setIsModalVisible(true);
   };
 
-  const handleModalCancel = () => {
-    setIsModalVisible(false);
+  const handleCancelEdit = () => {
     setEditingUser(null);
     form.resetFields();
   };
 
   const handleTableChange = (paginationConfig: { current?: number; pageSize?: number }) => {
-    setPagination(prev => ({
-      ...prev,
+    const newPagination = {
       current: paginationConfig.current || 1,
       pageSize: paginationConfig.pageSize || 10,
+    };
+    
+    setPagination(prev => ({
+      ...prev,
+      ...newPagination,
     }));
+
+    // Load users with new pagination
+    loadUsers(
+      newPagination.current,
+      newPagination.pageSize,
+      searchTerm,
+      selectedRole,
+      selectedStatus
+    );
   };
 
   const columns = [
@@ -525,7 +536,7 @@ export default function ManageUsersPage() {
           <Tooltip title="Edit User">
             <Button
               icon={<EditOutlined />}
-              onClick={() => showEditModal(record)}
+              onClick={() => showEditForm(record)}
               type="primary"
               ghost
               size="small"
@@ -569,75 +580,15 @@ export default function ManageUsersPage() {
       </Card>
 
       <div className="max-w-full mx-auto p-6">
-        <Card className="rounded-lg shadow-md">
-          {/* Filter Controls */}
-          <Row gutter={[16, 16]} className="mb-4" justify="space-between" align="middle">
-            <Col xs={24} sm={12} md={8}>
-              <Input.Search
-                placeholder="Cari user (nama, username, email)..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                allowClear
-              />
-            </Col>
-
-            <Col xs={24} sm={12} md={8}>
-              <Space style={{ float: 'right' }}>
-                <Button
-                  icon={<ReloadOutlined />}
-                  onClick={handleRefresh}
-                  loading={loading}
-                >
-                  Refresh
-                </Button>
-
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={showCreateModal}
-                >
-                  Tambah User
-                </Button>
-              </Space>
-            </Col>
-          </Row>
-
-          {/* Users Table */}
-          <Table
-            columns={columns}
-            dataSource={users}
-            rowKey={(record) => record._id || record.username || Math.random().toString()}
-            loading={loading}
-            pagination={{
-              ...pagination,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} dari ${total} user`,
-            }}
-            onChange={handleTableChange}
-            scroll={{ x: 1200 }}
-            locale={{
-              emptyText: searchTerm ? "Tidak ada user yang ditemukan" : "Belum ada user"
-            }}
-          />
-        </Card>
-
-        {/* Create/Edit User Modal */}
-        <Modal
-          title={editingUser ? "Edit User" : "Tambah User Baru"}
-          open={isModalVisible}
-          onCancel={handleModalCancel}
-          footer={null}
-          width={600}
-        >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={editingUser ? handleUpdateUser : handleCreateUser}
-          >
-            <Row gutter={16}>
-              <Col span={12}>
+        <Row gutter={[24, 24]}>
+          {/* Left Column - Add/Edit Form */}
+          <Col xs={24} lg={8}>
+            <Card title={editingUser ? `Edit User: ${editingUser.fullName}` : "Add New User"} bordered={false}>
+              <Form
+                form={form}
+                layout="vertical"
+                onFinish={editingUser ? handleUpdateUser : handleCreateUser}
+              >
                 <Form.Item
                   label="Username"
                   name="username"
@@ -648,9 +599,7 @@ export default function ManageUsersPage() {
                 >
                   <Input placeholder="Masukkan username" />
                 </Form.Item>
-              </Col>
 
-              <Col span={12}>
                 <Form.Item
                   label="Email"
                   name="email"
@@ -661,19 +610,15 @@ export default function ManageUsersPage() {
                 >
                   <Input placeholder="Masukkan email" disabled={!!editingUser} />
                 </Form.Item>
-              </Col>
-            </Row>
 
-            <Form.Item
-              label="Nama Lengkap"
-              name="fullName"
-              rules={[{ required: true, message: 'Nama lengkap wajib diisi!' }]}
-            >
-              <Input placeholder="Masukkan nama lengkap" />
-            </Form.Item>
+                <Form.Item
+                  label="Nama Lengkap"
+                  name="fullName"
+                  rules={[{ required: true, message: 'Nama lengkap wajib diisi!' }]}
+                >
+                  <Input placeholder="Masukkan nama lengkap" />
+                </Form.Item>
 
-            <Row gutter={16}>
-              <Col span={12}>
                 {!editingUser && (
                   <Form.Item
                     label="Role"
@@ -689,34 +634,93 @@ export default function ManageUsersPage() {
                     </Select>
                   </Form.Item>
                 )}
-              </Col>
 
-              <Col span={editingUser ? 24 : 12}>
                 <Form.Item
                   label="Unit Kerja"
                   name="unitKerja"
                 >
                   <Input placeholder="Masukkan unit kerja (opsional)" />
                 </Form.Item>
-              </Col>
-            </Row>
 
-            <Form.Item className="mb-0 text-right">
-              <Space>
-                <Button onClick={handleModalCancel}>
-                  Batal
-                </Button>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={creating}
-                >
-                  {editingUser ? "Update" : "Simpan"}
-                </Button>
+                <Form.Item>
+                  <Space>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      loading={creating}
+                    >
+                      {editingUser ? "Update User" : "Save User"}
+                    </Button>
+                    {editingUser && (
+                      <Button onClick={handleCancelEdit}>
+                        Cancel
+                      </Button>
+                    )}
+                  </Space>
+                </Form.Item>
+              </Form>
+            </Card>
+          </Col>
+
+          {/* Right Column - Users Table */}
+          <Col xs={24} lg={16}>
+            <Card title="List of Users" bordered={false}>
+              {/* Filter Controls */}
+              <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
+                <Row gutter={[16, 16]} justify="space-between" align="middle">
+                  <Col xs={24} sm={12} md={12}>
+                    <Input.Search
+                      placeholder="Cari user (nama, username, email)..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      allowClear
+                    />
+                  </Col>
+
+                  <Col xs={24} sm={12} md={12}>
+                    <Space style={{ float: 'right' }}>
+                      <Button
+                        icon={<ReloadOutlined />}
+                        onClick={handleRefresh}
+                        loading={loading}
+                      >
+                        Refresh
+                      </Button>
+
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={showCreateForm}
+                      >
+                        Clear Form
+                      </Button>
+                    </Space>
+                  </Col>
+                </Row>
+
+                {/* Users Table */}
+                <Table
+                  columns={columns}
+                  dataSource={users}
+                  rowKey={(record) => record._id || record.username || Math.random().toString()}
+                  loading={loading}
+                  pagination={{
+                    ...pagination,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total, range) =>
+                      `${range[0]}-${range[1]} dari ${total} user`,
+                  }}
+                  onChange={handleTableChange}
+                  scroll={{ x: 1200 }}
+                  locale={{
+                    emptyText: searchTerm ? "Tidak ada user yang ditemukan" : "Belum ada user"
+                  }}
+                />
               </Space>
-            </Form.Item>
-          </Form>
-        </Modal>
+            </Card>
+          </Col>
+        </Row>
       </div>
     </>
   );

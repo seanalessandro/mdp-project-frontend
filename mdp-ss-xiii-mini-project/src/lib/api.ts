@@ -6,10 +6,10 @@ import { CreateCommentPayload } from './types';
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (token: string) => void;
-  reject: (error: any) => void;
+  reject: (error: Error) => void;
 }> = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue.forEach(({ resolve, reject }) => {
     if (error) {
       reject(error);
@@ -103,7 +103,8 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
         headers['Authorization'] = `Bearer ${newToken}`;
         response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers, body });
       } catch (refreshError) {
-        processQueue(refreshError, null);
+        const error = refreshError instanceof Error ? refreshError : new Error('Token refresh failed');
+        processQueue(error, null);
         
         // Clear tokens and redirect to login
         if (typeof window !== 'undefined') {
@@ -114,7 +115,7 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
           window.location.href = '/auth/login';
         }
         
-        throw refreshError;
+        throw error;
       } finally {
         isRefreshing = false;
       }
@@ -152,6 +153,7 @@ export const refreshToken = (refreshTokenData: RefreshTokenRequest) => fetchApi(
   body: JSON.stringify(refreshTokenData),
 });
 export const getProfile = () => fetchApi('/profile');
+export const getUserProfile = () => fetchApi('/profile');
 export const logoutUser = () => fetchApi('/logout', { method: 'POST' });
 
 // === User Management Endpoints ===
@@ -243,6 +245,7 @@ export const updateDocument = (id: string, data: { title: string; content: strin
 });
 
 export const getMyDocuments = () => fetchApi('/documents');
+export const getAllDocuments = () => fetchApi('/documents/all');
 export const getDashboardStats = () => fetchApi('/documents/stats');
 export const deleteDocument = (id: string) => fetchApi(`/documents/${id}`, {
   method: 'DELETE',
@@ -266,6 +269,8 @@ export const rejectDocument = (id: string, comments: string) => fetchApi(`/docum
 export const getDocumentApprovalStatus = (id: string) => fetchApi(`/documents/${id}/approval-status`);
 
 export const checkDocumentCodaStatus = (id: string) => fetchApi(`/documents/${id}/coda-status`);
+
+export const retryCodaSync = (id: string) => fetchApi(`/documents/${id}/coda-retry`, { method: 'POST' });
 
 export const fetchDocumentDevelopmentStatus = (id: string) => fetchApi(`/documents/${id}/coda-dev-status`);
 

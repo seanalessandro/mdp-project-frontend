@@ -27,25 +27,37 @@ function DefaultDashboard() {
 export default function DashboardPage() {
   const { user, role, isLoading } = useAuth();
 
+  // Show loading spinner while checking authentication
   if (isLoading) {
     return (
       <div style={{ 
         display: 'flex', 
         justifyContent: 'center', 
         alignItems: 'center', 
-        height: '50vh' 
+        height: '100vh',
+        flexDirection: 'column',
+        gap: '16px'
       }}>
         <Spin size="large" />
+        <p>Loading dashboard...</p>
       </div>
     );
   }
 
+  // This check is now mainly for TypeScript, as redirect is handled in AuthContext
   if (!user || !role) {
     return (
-      <Card>
-        <Title level={3}>Authentication Required</Title>
-        <p>Please log in to access the dashboard.</p>
-      </Card>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        flexDirection: 'column',
+        gap: '16px'
+      }}>
+        <Spin size="large" />
+        <p>Authenticating...</p>
+      </div>
     );
   }
 
